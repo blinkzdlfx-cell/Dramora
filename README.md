@@ -6,7 +6,7 @@ Dramora is an AI-assisted video production workspace by **Brilina Dev**. It is b
 
 The goal is to bring planning, creative development, production continuity, AI-assisted asset creation, and production tracking into one organized workspace.
 
-> **Project status:** Foundation and product architecture. Application implementation has not started.
+> **Project status:** Product foundation and initial technical blueprint. Application implementation has not started.
 
 ## Product direction
 
@@ -40,12 +40,15 @@ The structure is intentionally technology-light until the detailed architecture 
 
 - [Product overview](docs/PRODUCT_OVERVIEW.md)
 - [Architecture direction](docs/ARCHITECTURE.md)
+- [Initial technical blueprint](docs/TECHNICAL_BLUEPRINT.md)
+- [Architecture decision log](docs/DECISIONS.md)
 - [Development roadmap](docs/ROADMAP.md)
+- [Setup checklist](docs/SETUP_CHECKLIST.md)
 - [Repository conventions](AGENTS.md)
 
 ## Development
 
-Application setup instructions will be added when the implementation stack and workspace tooling are finalized.
+Follow the setup checklist and technical blueprint. Application setup instructions will be finalized after the proposed stack is approved.
 
 ## License
 
