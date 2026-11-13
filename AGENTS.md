@@ -1,42 +1,59 @@
 # Dramora — Agent and Contributor Instructions
 
-## Source of truth
+## Mandatory reading order
 
-1. Read this file and the relevant documents in `docs/` before making changes.
-2. Treat approved product requirements and architecture decisions as authoritative.
-3. If implementation details conflict with the documentation, stop and report the conflict instead of silently changing product behavior.
-4. Do not invent requirements or assume an unapproved technology choice.
+Before changing code, read:
+1. `docs/PRODUCT_OVERVIEW.md`
+2. `docs/UX_SPECIFICATION.md`
+3. `docs/ARCHITECTURE.md`
+4. `docs/TECHNICAL_BLUEPRINT.md`
+5. `docs/STREAMING_AND_LOCAL_PROCESSING.md`
+6. `docs/DATA_MODEL.md`
+7. `docs/PROVIDER_INTEGRATION.md`
+8. `docs/DECISIONS.md`
+9. `docs/BUILD_READINESS.md`
+
+These documents are the current product and engineering source of truth. If code, a provider limitation, or a platform change conflicts with them, stop and report the conflict. Do not silently change product scope or architecture.
 
 ## Product principles
 
-- Dramora supports multiple forms of AI-assisted video production, not only micro-dramas.
-- The AI Showrunner is the central user-facing assistant.
-- Structured project and production records are the canonical source of truth; conversation history alone is not persistent memory.
-- Production structures must remain flexible. Films, advertisements, documentaries, and other formats must not be forced into a season/episode hierarchy.
-- External video-generation providers are integrated through adapters. Do not assume Dramora has its own video-generation engine.
-- Keep user-approved assets and production references safe. Preserve versions and require confirmation for destructive or high-impact actions.
-- Design for responsive use and modest client devices. AI workloads should use suitable cloud services rather than requiring local GPU hardware.
+- Dramora is a creative production workspace with a chat-first interaction model.
+- Standard Mode and Director Mode are two experiences over the same projects, context, and AI Showrunner.
+- The main workspace and composer remain the primary interface; the conversation may expand into a dismissible side panel.
+- The initial release generates and edits images, not videos. Do not implement in-app video generation, video rendering, clip stitching, or a nonlinear editor without a new explicit product decision.
+- The AI Showrunner is the central user-facing assistant. Internal orchestration is not exposed as a multi-agent control panel.
+- Structured project records are canonical; chat history is not the sole source of production memory.
+- Characters and reusable references must preserve identity, visual references, voice metadata, and version history where applicable.
+- Keep generated assets separate from conversations. Deleting a conversation must not silently delete generated assets.
+- Cloudflare is the hosting and application runtime. Do not introduce Vercel.
+- Use local browser processing only where it is supported and beneficial. Do not require a local GPU or local AI model.
+- IndexedDB is local persistence/cache, not GPU compute and not the canonical database.
 
 ## Engineering rules
 
-- Inspect the existing code and repository state before editing.
-- Prefer clear, maintainable modules over giant files or unnecessary abstraction layers.
-- Keep provider-specific code behind explicit interfaces; do not spread provider assumptions through business logic.
-- Validate all external input and enforce authorization on the server.
-- Never expose secrets, service-role credentials, or privileged tokens to browser code.
+- Inspect repository state, current branch, and relevant code before editing.
+- Keep the React/Vite frontend static-first and keep Worker API routes lightweight.
+- Do not perform CPU-heavy media processing, large file buffering, or expensive synchronous work in a Cloudflare Worker.
+- Stream AI provider responses through the Worker without buffering the full response.
+- Distinguish CPU time from network wait time; do not claim that streaming or a long provider wait inherently causes Error 1102.
+- Treat the Workers Free 10 ms CPU limit as a real constraint. Measure Worker CPU time and keep the API path within the configured plan limits.
+- Keep provider-specific APIs behind typed capability adapters.
+- Validate all external input and enforce user/project authorization on the server and with Supabase RLS.
+- Never expose provider keys, Supabase service-role keys, or privileged tokens to browser code.
+- Use private storage by default and short-lived signed URLs.
+- Use idempotency keys and durable job records for provider operations that can be retried.
 - Add tests for meaningful behavior and update documentation when architecture or behavior changes.
-- Do not add dependencies, infrastructure, or paid services without explaining why they are needed.
-- Do not claim a test passed unless it was actually run and its result inspected.
-- Avoid unrelated refactors and preserve existing user work.
+- Do not add dependencies, paid services, or infrastructure without explaining the need and verifying current limits/costs.
+- Never claim a test, build, deployment, or provider integration passed unless it was actually run and inspected.
 
 ## Change workflow
 
-1. Inspect relevant files and current branch state.
-2. Explain the intended change and any assumptions.
+1. Inspect the current state and relevant documentation.
+2. State the intended bounded change and assumptions.
 3. Implement the smallest coherent change.
-4. Run applicable checks and tests.
-5. Report changed files, test results, known limitations, and any follow-up work.
+4. Run applicable lint, typecheck, tests, and build.
+5. Inspect the results and report changed files, actual checks, limitations, and follow-up work.
 
 ## Licensing
 
-The repository is licensed under AGPL-3.0. Preserve applicable copyright and license notices. Check third-party dependency and asset licenses before incorporating them.
+The repository is licensed under AGPL-3.0. Preserve license notices and check third-party dependency, model, font, and asset licenses before incorporating them.
