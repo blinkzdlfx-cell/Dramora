@@ -62,7 +62,15 @@ scripts/                # Repeatable development and maintenance scripts
 
 ## Development
 
-Follow the setup checklist and technical blueprint. Confirm the documentation baseline before implementation. Never commit API keys, service-role credentials, or other secrets.
+Requirements: Node.js 24+ and npm 10+.
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env` before testing authentication. Apply SQL migrations from `supabase/migrations` to a dedicated Supabase project. Run `npm run check` before submitting changes. For a Workers-runtime preview, run `npm run preview`; deploy only after the environment and project are configured with approval. Never commit API keys, service-role credentials, or other secrets.
 
 ## License
 
