@@ -18,6 +18,11 @@ create trigger projects_set_updated_at before update on public.projects for each
 create or replace function public.add_project_owner_membership() returns trigger language plpgsql security definer set search_path='' as $$ begin insert into public.project_members(project_id,user_id,role) values(new.id,new.owner_id,'owner') on conflict(project_id,user_id) do nothing;return new;end; $$;
 drop trigger if exists projects_add_owner_membership on public.projects;
 create trigger projects_add_owner_membership after insert on public.projects for each row execute procedure public.add_project_owner_membership();
+
+-- Keep the owner column aligned with the immutable owner membership.
+create or replace function public.prevent_project_owner_change() returns trigger language plpgsql set search_path='' as $ begin if new.owner_id is distinct from old.owner_id and (select auth.uid()) is not null then raise exception 'Project ownership transfer is not supported by this API.'; end if; return new; end; $;
+drop trigger if exists projects_owner_immutable on public.projects;
+create trigger projects_owner_immutable before update of owner_id on public.projects for each row execute procedure public.prevent_project_owner_change();
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.project_members enable row level security;
