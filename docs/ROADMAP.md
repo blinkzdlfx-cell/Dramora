@@ -14,12 +14,12 @@ This roadmap follows the approved initial scope. Each phase must be completed an
 
 ## Phase 1 — Application foundation
 
-- [ ] Create React + TypeScript + Vite application using Cloudflare's supported Workers integration.
-- [ ] Configure Static Assets and API routing so static navigation does not invoke the Worker.
-- [ ] Add npm workspace structure, strict TypeScript, linting, formatting, and tests.
-- [ ] Add environment validation and secret-handling conventions.
-- [ ] Add GitHub Actions CI and Workers-runtime preview.
-- [ ] Configure Supabase Auth, migrations, and RLS baseline.
+- [x] Create React + TypeScript + Vite application using Cloudflare's supported Workers integration.
+- [x] Configure Static Assets and API routing so static navigation does not invoke the Worker.
+- [x] Add npm workspace structure, strict TypeScript, linting, and tests. Formatting automation remains to be added.
+- [x] Add public environment validation and server-secret handling conventions.
+- [ ] Add GitHub Actions CI and verify a Workers-runtime preview (workflow committed; execution pending).
+- [ ] Configure Supabase Auth, apply migrations, and verify RLS baseline (client and migration committed; project setup pending).
 
 ## Phase 2 — Workspace and project foundation
 

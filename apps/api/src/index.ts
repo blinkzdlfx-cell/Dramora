@@ -1,0 +1,4 @@
+interface Env { ASSETS: Fetcher }
+const headers={"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"};
+const worker={async fetch(request:Request,env:Env):Promise<Response>{const url=new URL(request.url);if(url.pathname==="/api/health"){if(request.method!=="GET")return Response.json({error:"method_not_allowed"},{status:405,headers});return Response.json({status:"ok",service:"dramora-api",timestamp:new Date().toISOString()},{headers});}if(url.pathname.startsWith("/api/"))return Response.json({error:"not_found",message:"This API route has not been implemented."},{status:404,headers});return env.ASSETS.fetch(request);}};
+export default worker satisfies ExportedHandler<Env>;
