@@ -4,7 +4,7 @@
 
 Dramora is an AI-assisted creative production workspace by **Brilina Dev**. It gives creators a simple conversational way to develop stories, manage production context, create and refine images, and organize the materials needed for films, series, micro-dramas, advertisements, documentaries, and other creative projects.
 
-> **Current status:** Product and architecture specification is being finalized. Application coding has not started.
+> **Current status:** Initial product and architecture specification completed. Application coding has not started. The documentation baseline is ready for product-owner review and the first implementation milestone.
 
 ## Product experience
 
@@ -62,7 +62,7 @@ scripts/                # Repeatable development and maintenance scripts
 
 ## Development
 
-Follow the setup checklist and technical blueprint. Do not begin implementation until the product owner confirms the documentation review is complete. Never commit API keys, service-role credentials, or other secrets.
+Follow the setup checklist and technical blueprint. Confirm the documentation baseline before implementation. Never commit API keys, service-role credentials, or other secrets.
 
 ## License
 
