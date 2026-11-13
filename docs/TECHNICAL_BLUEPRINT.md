@@ -1,113 +1,166 @@
-# Dramora — Initial Technical Blueprint
+# Dramora — Technical Blueprint
 
-**Status:** Proposed for review. This document does not silently approve paid services or irreversible infrastructure choices.
+**Status:** Approved initial build specification. Detailed implementation may refine internal module boundaries but must preserve the accepted product and architecture decisions.
 
-## 1. Product architecture
+## 1. Product shape
 
-Dramora is a production workspace, not a chat wrapper and not a single video generator. The application is organized around durable production records and a central AI Showrunner that can read context and perform explicitly authorized actions.
+Dramora is a chat-first creative production workspace. The user sees one coherent workspace, not a set of disconnected technical tools.
 
-Logical layers:
+- Standard Mode: conversational writing, brainstorming, and image requests.
+- Director Mode: structured development of stories, production bibles, characters, locations, scenes, and visual references.
+- AI Showrunner: the single user-facing assistant and coordinator.
+- Workspace: persistent canvas with assets and project context.
+- Conversation panel: expandable and dismissible; it does not navigate the user away from the workspace.
+- Asset history: independent of conversation history.
 
-1. **Experience layer** — project dashboard, production workspace, Showrunner, planning views, asset library, settings.
-2. **Application layer** — project and production rules, access control, Showrunner orchestration, asset lifecycle, job state and exports.
-3. **Domain layer** — projects, productions, production bible, creative references, scenes, shots, clips, assets, provider jobs and activity history.
-4. **Integration layer** — text, image and video-provider adapters; storage; background job orchestration.
-5. **Infrastructure layer** — database, authentication, object storage, deployment, monitoring and CI.
+The initial release supports text and image generation/editing. Video generation, video rendering, clip stitching, and audio generation are out of scope.
 
-The database is the source of truth. Chat transcripts are not a substitute for structured project state.
+## 2. Approved stack
 
-## 2. Initial stack recommendation
-
-| Area | Proposed choice | Reason |
+| Layer | Technology | Implementation rule |
 |---|---|---|
-| Web application | Next.js, React, TypeScript | Mature full-stack React ecosystem; supports a rich responsive workspace |
-| UI | Tailwind CSS and shadcn/ui | Consistent accessible components and maintainable styling |
-| Workspace | npm workspaces initially | Keeps setup simple and works with the existing Node/npm environment |
-| Database | Supabase PostgreSQL | Relational production data, migrations and row-level security |
-| Authentication | Supabase Auth | Integrated account and session foundation |
-| File storage | Supabase Storage, private buckets | Uploads and generated assets with controlled access |
-| API | Next.js server routes/actions behind server-side service modules | Avoids a separately deployed API until scale or workload justifies it |
-| Hosting | Vercel for the web application | Straightforward Next.js deployment; verify current plan limits before relying on it |
-| AI integration | Provider adapter interfaces; choose vendors after capability/cost evaluation | Avoids provider lock-in and hard-coded model assumptions |
-| Background work | Separate asynchronous job design; evaluate Supabase Queues/Edge Functions and Cloudflare Queues/Workflows before selection | Video and media tasks must not depend on a single request staying open |
-| CI | GitHub Actions | Repeatable lint, typecheck, tests and build checks |
+| Frontend | React + TypeScript + Vite | Static-first SPA |
+| Styling/components | Tailwind CSS + shadcn/ui | Use accessible primitives; avoid a bespoke CSS framework |
+| Hosting/runtime | Cloudflare Workers + Static Assets | No Vercel |
+| Worker development | Cloudflare Vite plugin + Wrangler | Preview in Workers runtime before deployment |
+| API | TypeScript Worker routes and application services | Keep request CPU and memory bounded |
+| Identity | Supabase Auth | Browser SDK with secure session handling |
+| Database | Supabase PostgreSQL | Migrations and RLS required |
+| Object storage | Supabase Storage | Private buckets and signed URLs |
+| Local cache | IndexedDB | Drafts, cache, and recoverable local checkpoints |
+| Local background work | Web Workers | Keep expensive UI-thread work off the main thread |
+| Optional media acceleration | WebAssembly/WebCodecs/WebGPU | Capability-gated; only for concrete local features |
+| AI text/image | External providers behind adapters | Vendor selection follows provider evaluation |
+| CI | GitHub Actions | Typecheck, lint, tests, build, and migration checks |
 
-This is a recommendation, not a final infrastructure lock. In particular, background orchestration and AI vendors need a short proof-of-concept before selection.
+Use npm workspaces unless a concrete compatibility issue is discovered. Keep the current Node 24 development baseline and pin supported versions in the repository when the foundation is implemented.
 
-## 3. Domain model — first-pass entities
+## 3. Application modules
 
-- **User / membership** — account identity and project access.
-- **Project** — top-level workspace and collaboration boundary.
-- **Production** — a film, series, advertisement, documentary, social video or other production.
-- **Production structure** — configurable containers such as acts, sequences, scenes, episodes, shots and clips. A production only uses the levels it needs.
-- **Production Bible** — persistent creative rules, tone, visual language and continuity notes.
-- **Reference entities** — characters, locations, wardrobe, props and other reusable subjects.
-- **Asset** — uploaded or generated image, audio, video, document or reference file, with metadata and storage path.
-- **Asset version** — immutable version history, approval state and provenance.
-- **Provider job** — external generation request, provider, status, parameters, result references and error details.
-- **Showrunner action** — structured tool/action execution, authorization, confirmation and outcome.
-- **Activity event** — auditable history of meaningful production changes.
+### Frontend modules
+- Authentication and account.
+- Project dashboard and project switcher.
+- Creative workspace shell.
+- Standard/Director mode state.
+- Conversation composer, message list, streaming renderer, and session history.
+- Expandable Showrunner side panel.
+- Production Bible and structured editor.
+- Character/reference manager.
+- Image generation composer and generation progress.
+- Asset library, collections, image detail, and version history.
+- Settings, accessibility, and responsive navigation.
 
-The first schema must support single-user ownership cleanly while leaving room for project collaborators. Avoid building complex organization billing before the product needs it.
+### Backend modules
+- Authentication/session guard.
+- Project authorization and domain services.
+- Conversation/session/message service.
+- Showrunner orchestration and context assembly.
+- Typed tool registry and confirmation policy.
+- Text provider adapter and stream normalizer.
+- Image provider adapter registry.
+- Generation job service and idempotency.
+- Asset upload, metadata, version, and signed URL service.
+- Activity/audit service.
+- Rate limiting and usage safeguards.
 
-## 4. AI Showrunner contract
+### Shared contracts
+- Domain types and enums.
+- Zod schemas or equivalent runtime validation.
+- API request/response contracts.
+- Stream event contracts.
+- Provider capability contracts.
+- Job status contracts.
 
-The Showrunner should operate through typed, validated tools. It must:
+Keep server-only code and secrets out of shared/browser packages.
 
-- Load only the current user's authorized project and production context.
-- Distinguish suggestions from actions that change saved records.
-- Ask for confirmation before destructive, costly or externally visible actions.
-- Save approved facts into structured records rather than relying on chat history.
-- Return clear job status for long-running operations.
-- Record action history and recover safely from retries.
-- Never expose provider credentials or privileged database keys to the browser.
+## 4. AI Showrunner behavior
 
-Provider adapters should advertise capabilities (for example text generation, structured output, image generation, image editing, reference conditioning, video generation and status polling). A provider is only selectable for capabilities it actually supports.
+The Showrunner:
+1. Identifies the user's intent and current mode.
+2. Loads authorized project context only.
+3. Answers directly when no tool/action is needed.
+4. Proposes a plan when a multi-step creative action is needed.
+5. Executes only tools allowed for the current user and project.
+6. Requests confirmation before costly, destructive, or externally visible actions according to policy.
+7. Saves approved durable facts into structured records.
+8. Returns progress and clear errors for asynchronous image jobs.
 
-## 5. Media and long-running jobs
+The Showrunner is one user-facing assistant. Internal model calls and tool orchestration remain invisible unless the user opens an optional activity detail.
 
-Video generation, rendering and large exports are asynchronous workflows:
+Tool calls must be typed, validated, authorized, idempotent where possible, and auditable.
 
-1. Validate request and user/project permissions.
-2. Create a durable job record.
-3. Dispatch work to the selected provider or worker.
-4. Persist provider job identifiers and progress.
-5. Poll or receive callbacks where supported.
-6. Store completed outputs in private object storage.
-7. Attach asset records and notify the UI.
-8. Support retry, cancellation where supported, and clear failure states.
+## 5. Conversation and streaming contract
 
-Do not proxy large media files through ordinary application request handlers. Use signed upload/download URLs and store object paths plus metadata in PostgreSQL. Do not assume a provider supports webhooks, cancellation or resumable uploads until verified.
+- User message is persisted before generation begins.
+- Each generation has a stable ID and idempotency key.
+- The API streams provider output immediately; it does not buffer the full answer.
+- The UI displays partial text progressively and supports Markdown safely.
+- The client stores received chunks in IndexedDB while streaming.
+- The final assistant message and terminal generation status are persisted to PostgreSQL.
+- Periodic bounded checkpoints may be sent to the API for cross-device recovery; do not write every token to the database.
+- A disconnected stream must be marked interrupted or recoverable, not silently marked complete.
+- If a provider supports continuation/resumption, use its documented contract. Otherwise offer a safe retry/continue action based on the last saved checkpoint; do not claim the same provider generation can always resume.
+- Prevent duplicate user/assistant messages with idempotency keys and sequence numbers.
 
-## 6. Security baseline
+Detailed events and failure behavior are specified in `STREAMING_AND_LOCAL_PROCESSING.md`.
 
-- Row-level security and server-side authorization are required.
-- Never expose service-role keys, provider API keys or signing secrets to client code.
-- Validate every external payload and uploaded file.
-- Use private storage by default and short-lived signed URLs.
-- Enforce file type, size and ownership rules.
-- Log job/action identifiers and safe error metadata; do not log secrets or full sensitive prompts unnecessarily.
-- Treat provider output and uploaded content as untrusted input.
-- Add retention and deletion rules before accepting large-scale user media.
+## 6. Image generation contract
 
-## 7. Build sequence
+- The client sends prompt, output settings, and references by asset ID.
+- The server validates ownership and capability support.
+- Provider adapter submits the request and normalizes status/output.
+- Generation record is created before external work.
+- Completed image bytes are validated and uploaded to private Storage.
+- Asset and asset-version records are created atomically where practical.
+- Original and edited versions are preserved.
+- The UI receives progress/status and displays the completed image in the workspace.
+- Provider credentials never reach the browser.
 
-1. Approve product scope and technical decisions.
-2. Establish app workspace, quality checks and environment validation.
-3. Implement Supabase project, migrations, authentication and RLS.
-4. Build project/production CRUD and flexible production structures.
-5. Build the Showrunner's typed action contract and persistent context.
-6. Add Production Bible and reference management.
-7. Add private asset uploads, versioning and approvals.
-8. Integrate the first text and image provider capabilities.
-9. Add asynchronous external video job tracking.
-10. Add exports, observability, security testing and deployment hardening.
+Provider selection must compare image quality, editing/reference support, output formats, API access, regional availability, pricing, rate limits, and terms.
 
-## 8. Decisions requiring confirmation
+## 7. Data and persistence
 
-- Approve Next.js + React + TypeScript + Tailwind/shadcn.
-- Approve Supabase for database, authentication and private storage.
-- Approve Vercel as the initial web host.
-- Choose the background-job platform after a small technical test.
-- Select initial AI providers based on required capabilities, quality, pricing and regional availability.
-- Decide whether the first release is single-user or includes project collaboration from day one.
+Supabase PostgreSQL is the canonical source of truth. IndexedDB is a recoverable local cache. The first schema is described in `DATA_MODEL.md`.
+
+Required records include users/profiles, projects, project memberships (even if collaboration UI is deferred), conversations, messages, generations, production bibles, characters, references, assets, asset versions, collections, and activity events.
+
+RLS must cover all user-owned records and Storage objects. Schema and policy changes must be version-controlled in `supabase/migrations`.
+
+## 8. Security baseline
+
+- Supabase Auth session validation on protected API routes.
+- RLS on all user-owned tables.
+- Server-side project and asset authorization.
+- Provider secrets stored as Cloudflare Worker secrets.
+- No service-role or provider keys in Vite environment variables.
+- Private Storage buckets and short-lived signed URLs.
+- Input size/rate limits and provider cost controls.
+- Safe Markdown rendering and sanitization.
+- File MIME/size validation and upload ownership checks.
+- Confirmation for destructive and paid operations.
+- Structured, redacted logs.
+
+## 9. Quality requirements
+
+- TypeScript strict mode.
+- Runtime validation at API and provider boundaries.
+- Unit tests for domain rules, schemas, and stream parsing.
+- Integration tests for auth/RLS, generation jobs, and asset versioning.
+- End-to-end tests for sign-in, project creation, chat streaming, side-panel behavior, image generation flow (mock provider), and recovery.
+- Responsive checks at mobile, tablet, and desktop widths.
+- Keyboard navigation, focus management, screen-reader labels, and reduced-motion support.
+- Cloudflare Worker preview and production-build verification.
+
+## 10. Initial implementation order
+
+1. Repository/tooling foundation and Cloudflare React/Vite deployment shell.
+2. Supabase Auth, database migrations, RLS, and private Storage.
+3. Project dashboard and workspace shell.
+4. Conversations, Standard/Director mode state, and streaming text.
+5. Showrunner context and typed tool/action system.
+6. Production Bible, characters, and reusable references.
+7. Asset library, image history, and collections.
+8. First image provider adapter and image generation job lifecycle.
+9. Recovery, rate limiting, observability, accessibility, and hardening.
+
+Do not start a video-generation or video-rendering phase.
