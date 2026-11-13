@@ -1,56 +1,74 @@
 # Dramora — Development Roadmap
 
-This roadmap describes a proposed sequence. Scope and ordering may be revised after architecture approval.
+This roadmap follows the approved initial scope. Each phase must be completed and validated before dependent work is expanded.
 
-## Phase 0 — Product and repository foundation
+## Phase 0 — Product and architecture baseline
 
-- [x] Create the public GitHub repository.
-- [x] Add the AGPL-3.0 license.
-- [x] Establish the initial repository structure.
-- [ ] Review and approve product requirements.
-- [ ] Approve architecture and technology choices.
-- [ ] Define contribution, testing, and release conventions.
+- [x] Establish repository and AGPL-3.0 license.
+- [x] Define product identity and multi-format creative scope.
+- [x] Approve Cloudflare-first hosting; exclude Vercel.
+- [x] Approve React/Vite, Supabase, and chat-first Standard/Director experience.
+- [x] Define text/image-only initial media scope.
+- [x] Document Google Flow research, UX behavior, streaming, local processing, data model, and provider contracts.
+- [ ] Product owner reviews and accepts the documentation baseline.
 
 ## Phase 1 — Application foundation
 
-- [ ] Set up workspace tooling and application shells.
-- [ ] Configure environment validation and secret handling.
-- [ ] Establish linting, formatting, type checking, and test tooling.
-- [ ] Add CI checks.
-- [ ] Implement authentication and account foundations.
+- [ ] Create React + TypeScript + Vite application using Cloudflare's supported Workers integration.
+- [ ] Configure Static Assets and API routing so static navigation does not invoke the Worker.
+- [ ] Add npm workspace structure, strict TypeScript, linting, formatting, and tests.
+- [ ] Add environment validation and secret-handling conventions.
+- [ ] Add GitHub Actions CI and Workers-runtime preview.
+- [ ] Configure Supabase Auth, migrations, and RLS baseline.
 
-## Phase 2 — Projects and production records
+## Phase 2 — Workspace and project foundation
 
-- [ ] Finalize database entity relationships.
-- [ ] Implement project and production management.
-- [ ] Implement flexible production structures.
-- [ ] Add ownership, authorization, and database policies.
+- [ ] Build responsive app shell and account navigation.
+- [ ] Implement project creation, switching, rename, archive, and deletion confirmation.
+- [ ] Implement conversation sessions and history.
+- [ ] Build persistent workspace canvas and composer.
+- [ ] Implement Standard/Director mode state and side-panel expand/close behavior.
+- [ ] Add IndexedDB cache and draft persistence.
 
-## Phase 3 — Showrunner and persistent context
+## Phase 3 — Streaming Showrunner
 
-- [ ] Define the Showrunner tool and action contracts.
-- [ ] Implement context retrieval and structured memory.
-- [ ] Add permission checks, confirmations, and action history.
-- [ ] Test execution, failure, and recovery paths.
+- [ ] Implement protected chat endpoint and text provider adapter interface.
+- [ ] Implement provider stream passthrough and client stream parser.
+- [ ] Add message idempotency, sequence handling, and bounded checkpoints.
+- [ ] Add local partial-response persistence and interruption/recovery UX.
+- [ ] Implement project context retrieval and typed Showrunner tools.
+- [ ] Add confirmation policy and activity records.
 
-## Phase 4 — Creative references and assets
+## Phase 4 — Production knowledge and references
 
-- [ ] Implement Production Bible records.
-- [ ] Implement characters, locations, wardrobe, and props.
-- [ ] Implement asset uploads, versions, approvals, and relationships.
-- [ ] Integrate selected image capabilities through provider adapters.
+- [ ] Implement Production Bible.
+- [ ] Implement characters with visual reference images and optional voice metadata.
+- [ ] Implement locations, wardrobe, props, and reusable references.
+- [ ] Implement mention/reference resolution (for example `@Character`).
+- [ ] Add continuity and approved-fact workflows.
 
-## Phase 5 — Production workflows
+## Phase 5 — Image generation and asset library
 
-- [ ] Implement scene, shot, and clip planning.
-- [ ] Add external video-generation workflow tracking.
-- [ ] Add background jobs, retries, and observable statuses.
-- [ ] Implement production continuity support.
+- [ ] Evaluate text and image providers against documented capability criteria.
+- [ ] Implement provider adapter registry.
+- [ ] Implement image generation/edit requests and generation-job lifecycle.
+- [ ] Upload outputs to private Supabase Storage.
+- [ ] Implement asset versions, image history, collections, and asset search.
+- [ ] Add safe retry, deletion, and recovery paths.
 
-## Phase 6 — Exports and release readiness
+## Phase 6 — Hardening and release readiness
 
-- [ ] Implement individual and complete production exports.
-- [ ] Complete security and authorization testing.
-- [ ] Add operational monitoring and cost controls.
-- [ ] Test responsive behavior and accessibility.
-- [ ] Document deployment, backup, and recovery procedures.
+- [ ] Test RLS and storage authorization across users/projects.
+- [ ] Test Worker CPU/memory/subrequest usage and stream completion.
+- [ ] Add rate limiting and provider cost safeguards.
+- [ ] Add Cloudflare observability and structured redacted logs.
+- [ ] Complete responsive, keyboard, accessibility, and performance testing.
+- [ ] Document backups, retention, account deletion, and deployment rollback.
+- [ ] Deploy to the approved Cloudflare environment after owner approval.
+
+## Explicitly not scheduled in the initial roadmap
+
+- Video generation, rendering, editing, or clip assembly.
+- Voice cloning, text-to-speech, or audio generation.
+- Mandatory local AI models or GPU workloads.
+- Billing/subscriptions and complex collaboration.
