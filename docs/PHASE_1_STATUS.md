@@ -27,3 +27,8 @@
 
 ## Validation status
 The repository connector cannot install npm packages or execute the local Vite/Wrangler toolchain. GitHub Actions is the executable validation path after this branch is pushed and CI starts. No successful build or deployment is claimed until CI reports green.
+
+
+## Current milestone boundary
+
+This branch is the first implementation slice, not a complete Phase 1 sign-off. The app shell, Cloudflare Worker/static asset wiring, Supabase email/password client, initial SQL migration, and CI workflow are present. The next validation gate is a green CI run plus a real Supabase project with the migration applied and RLS behavior verified. Formatter automation and a successful Workers preview remain open items.
