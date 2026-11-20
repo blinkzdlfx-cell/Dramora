@@ -15,7 +15,7 @@ The new Dramora product has two principal work areas:
 1. **AI Video Studio** — help users plan and prepare AI-video projects, research external video-generation platforms, understand their capabilities and workflows, and create platform-matched production materials. Dramora itself does not generate images or videos.
 2. **Film Studio** — support movie development and production writing, including ordinary scriptwriting, story development, and creation/management of project documents. Users may optionally export selected project materials as ZIP files.
 
-The application is a workspace and creative-production tool, not a general-purpose autonomous showrunner. The architecture must be designed around the two studios, project workspaces, reliable AI assistance, research, writing, documents, and exports.
+The application is a workspace and creative-production tool, not a general-purpose autonomous creative agent. The architecture must be designed around the two studios, project workspaces, reliable AI assistance, research, writing, documents, and exports.
 
 **No implementation is authorized by this document.** The user must review and approve the blueprint before implementation begins.
 
