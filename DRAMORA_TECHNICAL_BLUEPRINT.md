@@ -141,7 +141,9 @@ There is no existing application implementation to audit in the fresh repository
 | File storage | Supabase Storage | Private buckets and authorized access by default |
 | Edge/deployment | Cloudflare | Select Pages/Workers architecture after validating Vite and backend integration needs |
 | Package manager | npm | Commit lockfile and use reproducible installs |
-| Agent orchestration | LangGraph, conditional | Adopt only if a concrete multi-step stateful workflow needs it and compatibility is verified |
+| AI orchestration | LangGraph JS/TS | Intended orchestration layer for structured multi-step workflows; verify runtime and checkpoint integration before rollout |
+| Durable execution | Cloudflare Workflows | Background workflow execution, retries, persisted step state, and recovery; Supabase remains the canonical project/task record |
+| PostgreSQL connectivity from Workers | Cloudflare Hyperdrive | Use the supported Hyperdrive connection path for LangGraph's Postgres checkpointer; do not connect with an unproxied raw Postgres connection |
 | Search/research | Server-side web-search integration | Provider and quotas must be assessed; never expose API keys in the browser |
 | ZIP export | Server-side export job | Optional feature; enforce authorization and resource limits |
 
@@ -499,7 +501,7 @@ No phase begins until the user approves the blueprint and the required setup gat
 5. Decide which document formats and editing experience are required for the first release.
 6. Decide whether ZIP export belongs in the first release or a later phase.
 7. Approve React + Vite, Tailwind, shadcn/ui, assistant-ui, Supabase, Cloudflare, and npm as the foundation.
-8. Keep LangGraph conditional until a real workflow and compatibility test justify it.
+8. Adopt LangGraph as the intended orchestration layer for structured workflows, subject to the runtime/checkpoint compatibility proof.
 9. Approve the feature-based architecture direction while leaving the exact folder structure open for the implementation design step.
 
 ## 17. Research and compatibility references
@@ -518,7 +520,7 @@ Useful official references already consulted during the initial research include
 
 ## 18. Final recommendation
 
-Treat Dramora as a clean, new product build. Build the shared workspace foundation first, then deliver Film Studio and AI Video Studio as the two core product areas. Use assistant-ui for the interaction layer after compatibility verification, Supabase for durable application data and authorization, and Cloudflare for deployment. Keep LangGraph conditional. Make external video-platform research accurate and source-grounded. Keep documents first-class and ZIP export optional.
+Treat Dramora as a clean, new product build. Build the shared workspace foundation first, then deliver Film Studio and AI Video Studio as the two core product areas. Use assistant-ui for the interaction layer after compatibility verification, Supabase for durable application data and authorization, and Cloudflare for deployment. Use LangGraph for structured AI workflows and Cloudflare Workflows for durable background execution, after the compatibility proof. Make external video-platform research accurate and source-grounded. Keep documents first-class and ZIP export optional.
 
 Do not restore old application assumptions or add excluded capabilities. Do not begin implementation until the user has reviewed and approved this revised blueprint.
 
@@ -893,3 +895,187 @@ In addition to the earlier criteria, the initial release must demonstrate:
 This blueprint is a planning artifact. The fresh repository does not contain the previous application implementation, and no implementation work is authorized yet.
 
 The next activity after this update is user review of the consolidated blueprint and resolution of the open decisions. Research claims that depend on current vendor limits or runtime compatibility must be verified against current official documentation before the corresponding implementation decision is finalized.
+
+
+---
+
+## 24. Compatibility research and current service-limit findings — checked November 20, 2026
+
+This section records findings from current vendor documentation. These are documentation-level findings, not a claim that a running integration has already been tested. Package versions and limits must be rechecked at implementation time because vendors can change them.
+
+### 24.1 React + Vite on Cloudflare
+
+**Finding:** Cloudflare documents a supported React + Vite deployment path using the Cloudflare Vite plugin and Workers. The official guide supports both scaffolding a new React SPA with a Worker API and adapting an existing Vite application.
+
+**Recommendation:** Keep React + Vite + TypeScript. Use the Cloudflare Vite plugin and a Worker API entry point. Do not choose Cloudflare Pages as a separate architecture unless a concrete need appears; the current Workers Vite path can serve the SPA and API together.
+
+Source: [Cloudflare React + Vite guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/react/).
+
+### 24.2 assistant-ui and AI SDK
+
+**Finding:** assistant-ui's current documentation identifies AI SDK v7 with `@ai-sdk/react` v4 and `@assistant-ui/ai-sdk` as the recommended integration for new projects. It documents `useChatRuntime`, custom transports, tool approval, history adapters, and support for custom thread lists. assistant-ui also documents resumable streams for client reloads and dropped connections.
+
+**Recommendation:** Target the current assistant-ui AI SDK v7 integration, pinned to compatible package versions after a lockfile-level compatibility check. Use `useChatRuntime` unless a custom transport requires the lower-level runtime. Implement our own database-backed history/thread adapter so Supabase remains the source of truth. Do not use assistant-ui managed cloud persistence as the canonical project database.
+
+**Important limitation:** assistant-ui's resumable-stream documentation describes in-memory storage as development/test only and Redis adapters for production. Do not add Redis solely to solve long-running Dramora tasks. Long tasks should be durable jobs with persisted task state and progress; chat stream reconnect is a separate, shorter-lived concern. If resumable byte streams are needed, evaluate a Supabase- or Cloudflare-backed store with user-bound stream IDs.
+
+Sources: [assistant-ui AI SDK v7](https://www.assistant-ui.com/docs/runtimes/ai-sdk/v7), [assistant-ui resumable streams](https://www.assistant-ui.com/docs/guides/resumable-streams).
+
+### 24.3 LangGraph JS/TS and PostgreSQL checkpointing on Cloudflare
+
+**Finding:** LangGraph JS supports a formal checkpointer interface. Its PostgreSQL checkpointer uses node-postgres. The LangGraph JS PostgreSQL checkpointer documentation specifically warns that direct raw TCP/TLS database connections can hang in edge runtimes, and identifies Cloudflare Hyperdrive as the supported route for PostgreSQL connectivity from Cloudflare Workers.
+
+Cloudflare's current Node.js compatibility documentation lists supported Node APIs and the runtime's compatibility behavior. Cloudflare's Hyperdrive documentation provides a node-postgres integration example and recommends a current `pg` release (the guide specifies `pg > 8.16.3`).
+
+**Recommendation:** Keep LangGraph JS/TS as the intended AI orchestration framework. Use the LangGraph Postgres checkpointer with a Hyperdrive binding and the supported node-postgres setup, rather than direct Postgres connectivity from the Worker. Persist project and task records in Supabase independently of LangGraph checkpoints. Use stable, project-scoped thread IDs and never treat a LangGraph thread as the only copy of a user's project context.
+
+**Compatibility status:** The official documentation supports a credible integration route, but an isolated runtime proof is still required before relying on it in production. The proof must validate graph compilation, model invocation, checkpoint writes/reads, resume after a simulated interruption, and Cloudflare deployment. If the Postgres saver or graph package proves incompatible, evaluate a custom `BaseCheckpointSaver` implementation using Supabase/Hyperdrive; do not fall back to in-memory checkpointing for production.
+
+Sources: [LangGraph JS persistence](https://github.com/langchain-ai/langgraphjs/blob/main/docs/docs/concepts/persistence.md), [LangGraph JS Postgres checkpointer and Cloudflare note](https://github.com/langchain-ai/langgraphjs/blob/main/libs/checkpoint-postgres/README.md), [LangGraph checkpointer interface](https://langchain-ai.github.io/langgraphjs/reference/modules/langgraph-checkpoint.html), [Cloudflare Hyperdrive node-postgres guide](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-drivers-and-libraries/node-postgres/), [Cloudflare Node.js compatibility](https://developers.cloudflare.com/workers/runtime-apis/nodejs/).
+
+### 24.4 Durable execution: Cloudflare Workflows
+
+**Finding:** Cloudflare Workflows are available on Workers Free and Paid. They provide durable step execution, persisted step state, retries, and the ability to resume after failures. Their documentation recommends small, self-contained, idempotent steps instead of placing an entire multi-stage task inside one large step.
+
+Current published limits/pricing checked:
+- Workers Free: 100,000 requests per day shared across Workers/Workflows, 10 ms CPU time per invocation, 1 GB-month workflow state storage, and 3,000 workflow steps per day.
+- Workers Paid: $5 USD/month minimum account charge, with 10 million requests/month and 30 million CPU milliseconds/month included in the standard plan; CPU allowance is 30 seconds by default per invocation and can be configured up to 5 minutes, subject to platform limits and billing.
+- Workflow completed-state retention: 3 days on Free and 30 days on Paid by default.
+- Workflows step count, storage, and CPU usage are metered; idle time waiting for network I/O does not consume CPU.
+
+**Recommendation:** Use Cloudflare Workflows as the durable background execution and retry layer. Keep task/job status, completed deliverables, approval state, and recovery metadata in Supabase so the user's work remains available beyond Workflow state retention. Each Workflow step should perform a bounded unit of work and be idempotent. LangGraph coordinates AI-specific state transitions within bounded work units; Cloudflare Workflows handles durable job execution and retry. Do not rely on a single long-running HTTP response or `waitUntil()` as the durable job system.
+
+**Cost warning:** The Free plan's 10 ms CPU allowance is restrictive for orchestration-heavy code. A small compatibility prototype should measure actual CPU use. The likely production baseline for nontrivial workflows is Cloudflare Workers Paid at its $5/month minimum, but this is not an unconditional requirement until measurements confirm it. If the user insists on remaining entirely free, keep graph steps extremely lightweight and accept the Free plan's limits.
+
+Sources: [Cloudflare Workflows pricing](https://developers.cloudflare.com/workflows/reference/pricing/), [Cloudflare Workflows limits](https://developers.cloudflare.com/workflows/reference/limits/), [Cloudflare Workflow design rules](https://developers.cloudflare.com/workflows/build/rules-of-workflows/), [Cloudflare Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
+
+### 24.5 Supabase Edge Function limits and background execution
+
+**Finding:** Supabase currently publishes the following hosted Edge Function limits:
+- Free plan wall-clock duration: 150 seconds.
+- Paid plan wall-clock duration: 400 seconds.
+- CPU time: 2 seconds.
+- Request idle timeout: 150 seconds.
+- Memory: 256 MB.
+
+Supabase background tasks use `EdgeRuntime.waitUntil()`, but their duration remains bounded by the function's wall-clock, CPU, and memory limits. The documentation says the instance shuts down when a limit is reached.
+
+**Conclusion:** The previously discussed approximately 150-second Free-plan limit is confirmed for Supabase Edge Functions, but it is not an appropriate foundation for Dramora's durable long-running jobs. Use Supabase for durable data and Cloudflare Workflows for background execution. Supabase Edge Functions may still be used for bounded Supabase-specific operations if needed.
+
+Sources: [Supabase Edge Function limits](https://supabase.com/docs/guides/functions/limits), [Supabase background tasks](https://supabase.com/docs/guides/functions/background-tasks).
+
+### 24.6 Cloudflare Hyperdrive and Supabase Postgres
+
+**Finding:** Hyperdrive is available on Workers Free and Paid. Free currently includes 100,000 database queries per day. Supabase recommends the Data API for frontend access and pooled PostgreSQL connections for serverless/edge functions. Supabase's shared pooler is available on every plan; its dedicated pooler is Pro and above.
+
+**Recommendation:** Keep normal application CRUD on the Supabase Data API through `supabase-js` with RLS. Use Hyperdrive only for the LangGraph Postgres checkpointer if the PostgresSaver integration requires a native Postgres driver. Do not route all application reads and writes through raw SQL connections. Measure checkpoint query volume against the Free Hyperdrive allowance.
+
+Sources: [Cloudflare Hyperdrive pricing](https://developers.cloudflare.com/hyperdrive/platform/pricing/), [Supabase connection methods and pooling](https://supabase.com/docs/guides/database/connecting-to-postgres), [Supabase pooling and limits](https://supabase.com/docs/guides/database/connecting-to-postgres/pooling-and-limits).
+
+### 24.7 Supabase Auth session-lifetime restriction
+
+**Finding:** Supabase documents absolute time-boxed sessions, inactivity timeouts, and single-session enforcement as features available on Pro plans and above. By default, sessions can remain active indefinitely until sign-out or another terminating event. The default access token lifetime is generally one hour; refresh tokens are rotated and can keep a session alive.
+
+**Recommendation for the cost-conscious baseline:** Set a 30-day absolute application session lifetime and no separate inactivity timeout initially. On Supabase Free, enforce this as an application authorization policy using a server-created session record tied to the Supabase JWT `session_id`, with RLS and Storage policies checking that the record has not expired. The client should also sign out and request reauthentication when the deadline is reached. This must be security-tested against direct Data API and Storage requests; a client-only timer is insufficient.
+
+If the user later chooses Supabase Pro, prefer Supabase's native time-boxed session control configured to the same agreed duration. Do not represent the Free-plan application policy as native Supabase Auth session termination.
+
+**Proposed decision:** 30-day absolute lifetime, no inactivity timeout, no single-session restriction. This is a recommendation for user review, not yet approved.
+
+Source: [Supabase Auth sessions](https://supabase.com/docs/guides/auth/sessions).
+
+### 24.8 pgvector, full-text search, and RAG
+
+**Finding:** Supabase supports pgvector in Postgres and documents hybrid search combining PostgreSQL full-text search (`tsvector`) with pgvector semantic search. Vector similarity queries can be exposed through SQL functions/RPC, and metadata filters can scope retrieval.
+
+**Recommendation:** Build the first project-context retrieval layer with structured project facts, document metadata, PostgreSQL full-text search, and bounded summaries. Add pgvector only after representative project queries demonstrate that keyword/metadata retrieval is insufficient. When added, scope every search by user and project, record the embedding model/version and dimensions, and rebuild embeddings when the source document changes. Keep source documents and approved facts canonical.
+
+This settles the architecture direction without forcing an embedding model or recurring embedding cost into the first migration.
+
+Sources: [Supabase vector columns](https://supabase.com/docs/guides/ai/vector-columns), [Supabase hybrid search](https://supabase.com/docs/guides/ai/hybrid-search).
+
+### 24.9 Screenplay and general-document editing
+
+**Finding:** Fountain is a free, open, plain-text screenplay markup format designed for portability and long-term readability. It supports core screenplay elements but not all production-specific features. Tiptap is a modular React-compatible editor built on ProseMirror; its open-source core is MIT licensed and supports a Vite + React integration.
+
+**Recommended first-release editing approach:**
+- General production documents and notes: Tiptap-based rich-text editor, with only the required open-source extensions.
+- Screenplays: a dedicated Fountain-based screenplay editor with a live formatted preview, using a maintained parser/renderer after license and compatibility review. Keep the screenplay's structured source exportable as `.fountain`.
+- Screenplay exports: PDF for reading/printing, Fountain for portability, and Final Draft XML (`.fdx`) for compatibility with professional screenwriting software. FDX export must be validated with real test files and not merely renamed XML.
+- General document exports: PDF and DOCX.
+- ZIP export: defer until the core editor and document lifecycle are stable.
+
+**Implementation caution:** Do not assume a generic rich-text editor automatically produces industry-standard screenplay pagination. Screenplay formatting, page breaks, dialogue widths, title pages, and scene numbering require a dedicated renderer and acceptance tests.
+
+Sources: [Fountain format](https://fountain.io/), [Fountain FAQ](https://fountain.io/faq/), [Tiptap React setup](https://tiptap.dev/docs/editor/getting-started/install/react), [Tiptap overview and license](https://tiptap.dev/docs/editor/getting-started/overview), [Final Draft import guidance](https://kb.finaldraft.com/hc/en-us/articles/15575252515988-What-file-formats-can-I-import-into-Final-Draft).
+
+### 24.10 Speech transcription
+
+**Finding:** OpenAI's current file transcription guidance recommends `gpt-transcribe` for recorded audio. It accepts files up to 25 MB and supports common formats including FLAC, MP3, MP4, MPEG, MPGA, M4A, OGG, WAV, and WebM. The published model price is $0.0045 per audio minute. The model's API tier table does not list a free tier.
+
+**Recommendation:** Use file-based transcription, not live voice conversation, for the initial release. The browser records a bounded clip, uploads it to a trusted server endpoint, receives the transcript, and displays it for editing before the user sends it. Apply duration and file-size limits below the provider maximum, and do not store raw audio after transcription unless the user explicitly requests it.
+
+**Cost implication:** This is a low per-minute cost but not a free service; it requires API billing/credits. Confirm that the user accepts this provider and cost before enabling the feature in production.
+
+Sources: [OpenAI speech-to-text guide](https://developers.openai.com/api/docs/guides/speech-to-text), [GPT-Transcribe model and price](https://developers.openai.com/api/docs/models/gpt-transcribe).
+
+---
+
+## 25. Recommended decisions to close the open items
+
+The following are the recommended defaults to make the first release implementable without overbuilding. They are presented for user review and approval.
+
+| Open item | Recommended decision | Reason |
+|---|---|---|
+| Absolute session lifetime | 30 days | Finite lifetime without forcing frequent sign-ins |
+| Inactivity timeout | None initially | Avoid unexpectedly interrupting active creative work; absolute lifetime still applies |
+| Single session per user | Disabled | Allow normal use across the user's devices |
+| Supabase session enforcement | RLS-backed application session expiry on Free; native Supabase time-boxing if Pro is selected | Avoid requiring Pro solely for this control |
+| General document editor | Tiptap open-source core | Mature React/ProseMirror foundation with modular extensions |
+| Screenplay editor | Fountain source + dedicated editor and live screenplay preview | Portable screenplay source and explicit control over industry formatting |
+| First-release screenplay exports | PDF, Fountain, Final Draft (.fdx) | Covers reading, portability, and professional screenwriting handoff |
+| First-release production-document exports | PDF and DOCX | Practical sharing and editing |
+| ZIP export | Defer until after core document workflows | Avoid adding archive complexity before documents are stable |
+| Context retrieval | Structured project facts + PostgreSQL full-text search first; pgvector after retrieval evaluation | Lower cost and complexity while preserving a semantic-search upgrade path |
+| Durable background jobs | Cloudflare Workflows; task records and completed artifacts in Supabase | Durable retry/recovery without depending on Supabase's 150-second Free Edge Function window |
+| AI orchestration | LangGraph JS/TS with Postgres checkpointer through Hyperdrive | Aligns with the user's selected orchestration direction and documented Cloudflare connection route |
+| Chat UI integration | assistant-ui with AI SDK v7 runtime and custom Supabase history | Reuse the established chat UI while keeping application data in Supabase |
+| Voice transcription | OpenAI `gpt-transcribe` file transcription, subject to billing approval | Current recommended transcription model with a published per-minute price |
+| Initial media scope | No image uploads, no native image/video generation, no live voice conversation | Matches the confirmed first-release scope |
+
+### 25.1 Cost and plan decision
+
+The lowest-complexity cost-conscious target is:
+- Supabase Free for Auth, Postgres, Storage, and RLS, provided its operational limits are acceptable.
+- Cloudflare Workers Free for the initial integration proof and low-volume testing.
+- Cloudflare Workers Paid ($5/month minimum) if measured CPU use, Workflow step volume, or retention needs exceed Free-plan constraints.
+- Cloudflare Hyperdrive Free initially, with a published allowance of 100,000 database queries/day.
+- OpenAI transcription billed by audio minute.
+- AI model inference and web search remain separate usage costs depending on the selected providers.
+
+Do not promise that all production usage will remain free. The architecture should keep costs visible and avoid paid services until a measured requirement justifies them.
+
+### 25.2 Remaining user choices before final approval
+
+Only these points require a direct user decision rather than further technical research:
+1. Accept the proposed 30-day absolute session lifetime, with no inactivity timeout and no single-session restriction.
+2. Accept the recommended editor and export split: Tiptap for general documents; Fountain-based screenplay editor; PDF/Fountain/FDX for screenplays; PDF/DOCX for production documents.
+3. Accept ZIP export being deferred until after the core document workflows.
+4. Accept OpenAI `gpt-transcribe` and its usage-based cost, or request a different provider.
+5. Confirm whether the target is Supabase Free + Cloudflare Free initially, with a possible $5/month Cloudflare Paid upgrade if measured limits require it.
+
+These choices can be approved together with the blueprint or amended during review. No implementation is authorized until the user explicitly approves the final blueprint.
+
+## 26. Research completion status and pre-implementation proof requirements
+
+**Documentation research completed:** Current official documentation has been checked for the main stack, assistant-ui/AI SDK integration, LangGraph persistence, Cloudflare Workers/Workflows/Hyperdrive, Supabase Edge Function limits, Supabase Auth session controls, pgvector/RAG, Tiptap/Fountain, and transcription.
+
+**Not yet runtime-verified:** No application code or integration proof has been run. The following small, isolated proofs are required after blueprint approval and before the corresponding production feature is committed:
+1. Deploy a minimal React + Vite + assistant-ui + AI SDK v7 chat to Cloudflare Workers.
+2. Run a LangGraph JS graph in the Worker and verify PostgresSaver checkpoint write/read/resume through Hyperdrive.
+3. Run a Cloudflare Workflow with a bounded step, intentional failure, retry, and successful resume; confirm the task record remains correct in Supabase.
+4. Test session expiry enforcement through direct Supabase Data API and Storage requests, not just the UI.
+5. Test Fountain parsing/rendering and validate generated PDF and FDX files in compatible screenplay software.
+6. Test speech transcription with representative English and Nigerian-accented speech, including transcript review/edit before send.
+
+These are integration proofs, not permission to begin the full product implementation. The user must first review and approve the blueprint. If a proof exposes a material incompatibility or cost issue, update the blueprint and obtain approval for the changed design before proceeding.
