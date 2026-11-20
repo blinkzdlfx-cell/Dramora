@@ -111,7 +111,7 @@ Earlier Dramora work and project discussions established the following context. 
 | Area | Historical project context | Verification still required |
 |---|---|---|
 | Product | AI Movie Writing & Pre-Production Workspace; AI Showrunner | Confirm current product behavior |
-| Production URLs | `https://dramora.brilinadev.name.ng`; `https://dramora.brilinadev.name.ng` was the app domain; Worker URL historically noted as `https://dramora.brilinadev.workers.dev` in some notes | Confirm exact canonical app/API domains and current deployment |
+| Production URLs | App domain historically noted as `https://dramora.brilinadev.name.ng`; Worker URL spelling is inconsistent across older notes | Confirm exact canonical app/API domains and current deployment |
 | Backend | Supabase PostgreSQL | Confirm project and live schema |
 | Supabase project reference | Historical ID `eilbacycqntarrhstyce` | Confirm correct project |
 | Data | Projects, conversations, messages, memory, embeddings, creative documents, approvals, and tasks were discussed | Inspect exact tables, constraints, indexes, triggers, and RLS |
