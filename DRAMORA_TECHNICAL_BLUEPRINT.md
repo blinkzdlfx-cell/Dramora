@@ -1079,3 +1079,227 @@ These choices can be approved together with the blueprint or amended during revi
 6. Test speech transcription with representative English and Nigerian-accented speech, including transcript review/edit before send.
 
 These are integration proofs, not permission to begin the full product implementation. The user must first review and approve the blueprint. If a proof exposes a material incompatibility or cost issue, update the blueprint and obtain approval for the changed design before proceeding.
+
+
+---
+
+## 27. Latest approved architecture and task-execution decisions
+
+**Decision status:** This section records the latest decisions confirmed during the November 20–21, 2026 planning discussion. Where this addendum conflicts with older recommendations elsewhere in this document, this addendum is the newer decision and takes precedence. The older sections must be reconciled during the final blueprint consolidation so that the document does not contain contradictory architecture.
+
+### 27.1 Product and studio scope — confirmed
+
+Dramora has exactly two studios:
+
+1. **AI Video Studio** — a broad video-production studio supporting formats such as YouTube videos, advertisements, social content, music videos, cinematic storytelling, short films, documentaries, and educational videos. It also supports dedicated cinematic planning when the user's project calls for it. Capabilities include concept development, scripts/narration/dialogue, story development, scene breakdowns, shot planning, character and environment planning, visual direction, external image/video-generation prompt preparation, organization of externally generated assets, production checklists, continuity, and review/refinement. Dramora prepares work for external generation platforms; native image and video generation are not part of the product.
+2. **Film Studio** — a complete film-development and production studio covering concepts, premise, genre, themes, logline, synopsis, story structure, acts, sequences, plot, conflict, turning points, endings, character development, relationships and arcs, world/location development, professional screenplay writing and review, and production preparation such as scene breakdowns, cast/character lists, locations, props, costumes, schedules, production notes, and call sheets.
+
+The two studios share the underlying project, conversation, document, asset, continuity, RAG, memory, and task foundations while retaining distinct specialist workflows and interfaces. Dramora must follow the user's actual intention; it must not force an advertisement, social video, or other request into a cinematic workflow when that is not what the user wants.
+
+### 27.2 Conversational project setup and context — confirmed
+
+- Project creation should be conversational and lightweight, not a mandatory long setup form.
+- The user defines the project title.
+- Conversation titles are generated automatically and remain editable.
+- A project can contain multiple conversations.
+- Project-level context is shared across its conversations; conversation-specific context remains distinct.
+- Retrieve bounded, relevant context rather than injecting the entire project history into every model request.
+- Workspace settings are editable within the workspace and are not a mandatory onboarding step.
+- Ask questions only when missing information materially changes the outcome. Otherwise, make reasonable, visible assumptions and proceed.
+- Users may answer naturally; optional selectable answers can be offered when useful but must not restrict free-text input.
+
+### 27.3 AI autonomy selector — confirmed
+
+Dramora provides a user-selectable autonomy setting with three modes:
+
+- **Guided:** more frequent clarification and approval before major stages.
+- **Balanced:** the default; handles routine decisions independently and asks when important decisions arise.
+- **Autonomous:** executes the user's approved objective with minimal interruptions.
+
+The selector belongs in workspace settings and may also be surfaced in the workspace UI. The user explicitly chooses the mode; Dramora must not silently auto-select a mode. Changing the setting does not silently alter the permissions or approved scope of a task already running. An in-progress task retains its existing approved scope unless the user explicitly changes it.
+
+Autonomy rules:
+- Do not ask for redundant approval for work the user explicitly requested.
+- Approval is limited to the stated plan and scope; it is not unlimited authorization.
+- Consequential actions require approval where appropriate, including changing established story facts, replacing approved documents, deleting documents/assets, making major project-direction changes, or taking external actions.
+- Preserve the distinction between established facts, proposed ideas, and unresolved decisions. An AI suggestion does not become project canon until accepted.
+- Persist approvals so a workflow can resume without repeatedly asking for the same approval.
+
+### 27.4 Simplified task controls — confirmed
+
+The user approved a deliberately small user-facing control set:
+
+1. **Stop**
+2. **Continue**
+3. **Retry**
+4. **Restore**, available within document version history rather than as a primary task control.
+
+There are no separate primary **Pause**, **Cancel**, or **Modify** buttons. Changes to a task are communicated naturally through the conversation. If a new instruction materially changes an already-approved plan or scope, Dramora must identify the change and obtain any approval required by the selected autonomy mode and the consequential-action rules.
+
+#### Stop
+
+- During normal AI response generation, the composer’s Send button changes into a Stop button while Dramora is actively responding.
+- Pressing Stop interrupts the active response generation.
+- During a background workflow, the same user-facing Stop action requests a safe interruption. It is not merely a browser-side abort.
+- Stop must preserve completed work and must not implicitly delete project artifacts or abandon the task.
+- The UI should communicate when a stop request has been received and, where necessary, when the backend has reached a safe stopping point.
+
+#### Continue
+
+- Continue resumes an interrupted task from its latest safe, durable checkpoint.
+- It must not restart already completed stages unnecessarily.
+- The user may provide additional instructions after stopping; Continue should incorporate those instructions and validate whether they change the remaining plan.
+- Before resuming, Dramora must verify the task's current state, project context, permissions, and approved scope.
+
+#### Retry
+
+Retry is distinct from Stop and is not a replacement for Continue.
+
+- Retry is offered in or adjacent to the composer/text area when an operation has failed and another attempt is meaningful.
+- Dramora should attempt bounded automatic recovery when appropriate, using sensible retry limits and backoff. It must not retry indefinitely.
+- Retry only the failed or safely repeatable unit; do not repeat successful stages or duplicate saved artifacts.
+- If automatic recovery cannot resolve the problem, Dramora must return a useful failure report explaining:
+  1. What was completed successfully.
+  2. What could not be completed.
+  3. Why it failed, to the extent known.
+  4. What it proposes to do next.
+- A manual Retry action may then be shown when another attempt is viable. Do not show Retry when the failure is permanent or another attempt would be unsafe or meaningless.
+
+#### Restore
+
+- Restore is a document-version-history operation, not a task-control button.
+- Restoring an earlier version must create a new version based on that historical content. It must not erase newer versions or silently destroy the current document state.
+
+### 27.5 Task lifecycle and interruption semantics — confirmed
+
+The backend must distinguish at least these conceptual states:
+
+| State | Meaning and expected behaviour |
+|---|---|
+| Queued | Accepted and waiting to execute. |
+| Running | Currently executing a bounded operation or workflow stage. |
+| Stop requested | A durable request to stop at the next safe boundary. |
+| Interrupted | Stopped before completion; completed work and checkpoint are preserved and Continue is available when safe. |
+| Awaiting input/approval | Execution is waiting for a user answer or required approval. |
+| Failed | The task could not proceed; explain the failure and offer Retry only if recovery is viable. |
+| Completed | All requested work has finished and its outputs are durably saved. |
+| Abandoned | The user intentionally decides not to continue. Completed work remains preserved; the task is not resumed automatically. |
+
+These are internal lifecycle states; they do not all need separate user-facing buttons. An interrupted task must not become abandoned merely because the user closes a tab, refreshes, navigates away, loses connectivity, or closes the browser. Abandonment is an intentional user decision, not a side effect of navigation or disconnection.
+
+### 27.6 Normal response generation versus background workflows — confirmed
+
+These two execution types require different backend handling while presenting a consistent Stop interaction.
+
+**Normal text generation**
+- Stop interrupts the current generation.
+- Define and implement a clear policy for whether partial generated text is persisted as an interrupted/partial assistant message; never present incomplete text as a completed answer.
+- The user may provide a new instruction or ask Dramora to continue where meaningful.
+- A page refresh or navigation must not be interpreted as an explicit user cancellation.
+- A disconnected client must not corrupt already-persisted messages or project data.
+
+**Background workflows**
+- The backend owns execution state; the browser does not.
+- Stop writes a persistent stop request that workers inspect at safe checkpoints.
+- A running operation may need to finish or safely exit its smallest atomic unit before stopping; the UI must not falsely promise instantaneous termination.
+- Save completed stage outputs and a durable checkpoint before marking the task interrupted.
+- Once the stop request is acknowledged at a safe boundary, do not start another stage.
+- Continue resumes from the latest safe checkpoint after checking for changed instructions, project state, permissions, and approval scope.
+- Browser refresh, tab closure, navigation, or temporary network loss must not cancel a durable background job.
+- A task must not depend on a single long-lived browser request remaining open.
+
+### 27.7 Required execution-safety mechanisms — confirmed requirements
+
+The implementation must provide:
+- Durable task and stage records in the canonical database.
+- Checkpoints after meaningful workflow stages and at safe interruption boundaries.
+- Idempotency keys or equivalent safeguards to prevent duplicate work and duplicate artifact creation.
+- Persistent stop-request state and cooperative cancellation checks.
+- Safe recovery after network failures, worker restarts, and execution timeouts.
+- Protection against concurrent workers executing the same task or stage.
+- Durable persistence of completed deliverables before acknowledging queue/workflow progress.
+- Retry limits, backoff, and clear permanent-versus-recoverable error classification.
+- Task progress and status that can be reloaded after refresh or from another device.
+- Auditability of approvals, scope changes, stop requests, retries, and restoration actions.
+
+Exactly-once execution must not be promised. Use durable state, idempotent operations, and reconciliation to make retries safe.
+
+### 27.8 Current backend and cost constraints — latest decisions
+
+The latest architecture direction is **Supabase-primary**, with Supabase serving as the main application backend and system of record. Use Supabase PostgreSQL, Auth, Storage, RLS, pgvector, Edge Functions, Queues (pgmq), and Cron where appropriate. Cloudflare is used selectively for frontend delivery and Workers AI inference rather than being the central application backend.
+
+The user's cost constraint is strict: use free tiers only. Do not require paid upgrades, paid AI credits, paid fallbacks, or automatic switches to paid services. If a free quota or limit is reached, stop or defer the affected operation, explain the limitation, and resume when the free allocation resets or the user chooses an approved alternative. Never silently incur a charge.
+
+For Supabase Edge Functions, design bounded units of work that checkpoint and finish comfortably within hosted limits. Supabase Queues are durable Postgres-backed queues but do not run consumers continuously by themselves; use Cron or another approved scheduler to invoke bounded consumers. Persist results before acknowledging queue messages and make consumers idempotent. Do not rely on one long-running function invocation for a complete multi-stage creative workflow.
+
+### 27.9 RAG is core architecture — confirmed
+
+RAG is a foundational requirement from the initial schema, not an optional later add-on.
+
+The approved direction is:
+- Supabase PostgreSQL with pgvector.
+- Hybrid retrieval combining semantic vector search and PostgreSQL full-text search.
+- Reciprocal Rank Fusion (RRF) to combine candidate rankings.
+- Content-aware chunking: paragraph/section chunks for general documents; scene-based chunks for screenplays; character-section chunks for profiles; act/sequence chunks for outlines; heading/section chunks for production documents; topic/decision chunks for conversation summaries.
+- Canonical source documents and project data remain authoritative; embeddings are derived indexes.
+- Knowledge categories remain distinguishable: project documents, structured project memory, conversation memory, and user-level preferences.
+- Do not automatically embed every message. Use bounded recent context and retrievable topic/decision summaries.
+- Preserve provenance, document versions, content hashes, and the distinction between established facts, proposals, and unresolved decisions.
+- Enforce user/project/studio/document authorization in database-side retrieval policies and RLS, not only in the UI or orchestration layer.
+- Update affected chunks incrementally where feasible; remove or disable embeddings when source content is deleted.
+- Query and document embeddings must use the same model and dimensions. Do not mix vector spaces.
+- EmbeddingGemma 2 through Cloudflare Workers AI at 512 dimensions is a candidate, not a finally verified model decision. Benchmark retrieval quality on representative Dramora documents before locking it.
+
+If free embedding quota is exhausted, pause new semantic indexing and continue with full-text retrieval where possible. Resume indexing when quota resets. Do not switch to a different model and mix vectors.
+
+### 27.10 Seven required RAG integration proofs — approved
+
+Before treating the RAG implementation as production-ready, prove:
+
+1. Generate EmbeddingGemma 2 embeddings through the Cloudflare REST API from an approved Supabase Edge Function flow.
+2. Store and retrieve 512-dimensional vectors using pgvector.
+3. Execute hybrid semantic + keyword retrieval and combine results with RRF.
+4. Demonstrate content-aware chunking, including correct screenplay scene boundaries.
+5. Prove isolation: one project cannot retrieve another project's information.
+6. Demonstrate incremental indexing after a document edit, reprocessing only affected content where feasible.
+7. Simulate free-quota exhaustion: semantic indexing pauses, full-text retrieval remains available, and indexing resumes after quota availability returns.
+
+These are integration proofs. The embedding model/dimension remains a candidate until the benchmark and proofs pass.
+
+### 27.11 AI provider and quota policy — confirmed
+
+- Maintain a central provider/model capability registry and track applicable free quotas.
+- Never expose provider credentials to the browser.
+- Never automatically fall back to a paid model, paid API, or paid plan.
+- Provider selection must account for supported capabilities, rate limits, free quotas, and the task's requirements.
+- If a quota is exhausted, report it clearly and defer or use an already-approved free alternative only when doing so does not compromise the task or mix incompatible embedding spaces.
+- Workers AI's free daily Neuron allocation is shared across applicable Workers AI workloads, including inference, embeddings, and transcription; quota must therefore be managed centrally.
+- Gemini free limits are model-specific and must be verified for the selected model.
+- OpenRouter's free-model limits must be treated as finite and must not be bypassed by purchasing credits.
+- No provider-specific quota or capacity should be presented as guaranteed without checking current official limits.
+
+### 27.12 Authentication session policy — confirmed user requirements
+
+The user-selected session behaviour is:
+- 30-day absolute session lifetime.
+- 5-day inactivity timeout.
+- Multiple devices allowed.
+- Refresh preserves a session only while it remains valid.
+- Expired sessions require reauthentication.
+
+On Supabase Free, enforce the policy through application-level per-device session records linked to the Supabase JWT session identifier, with server-side/RLS enforcement. Do not rely on a client-only timer. Test direct Data API and Storage access after expiry and inactivity timeout. Do not assume Supabase's Pro-only native time-boxed controls are available on Free.
+
+### 27.13 Product releases and implementation governance — confirmed
+
+- Plan explicit product releases with features introduced, improvements, dependencies, acceptance criteria, known limitations, and deliberate deferrals.
+- Release 1 must be a strong, coherent and genuinely useful product, not an artificially restricted MVP.
+- Foundational project memory, RAG, continuity, durable task execution, safe interruption/recovery, and essential workflows must be included in the architecture from the beginning.
+- Keep three documentation categories distinct: **Confirmed decisions**, **Technical findings**, and **Implementation roadmap**.
+- Do not represent recommendations, candidates, or untested technical assumptions as user-approved decisions.
+- Do not begin implementation until the user has reviewed and explicitly approved the final consolidated blueprint.
+
+### 27.14 Next planning discussion — not yet decided
+
+The next discussion is **Documents, Editors and Creative Workspace**. It must define document creation, editing, organization, versioning, autosave/persistence, editor experiences, and how creative artifacts are presented across AI Video Studio and Film Studio.
+
+No decisions from that discussion should be inferred or added as confirmed until the user has reviewed and approved them.
