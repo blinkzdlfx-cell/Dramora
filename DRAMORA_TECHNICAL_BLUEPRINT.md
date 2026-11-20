@@ -98,7 +98,7 @@ Shared capabilities should be implemented once and exposed through clear feature
 ### 3.4 Explicit exclusions
 
 The following are outside the current product scope:
-- A Showrunner product or Showrunner subsystem.
+- An autonomous all-purpose creative-director product or subsystem outside the two defined studios.
 - Native image generation.
 - Native video generation.
 - Rebuilding or migrating the deleted application's old implementation.
