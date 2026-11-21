@@ -1451,3 +1451,252 @@ No numerical latency or scale target is approved yet. Set measurable targets aft
 
 The next product-design discussion remains **Documents, Editors and Creative Workspace**, as recorded in section 27.14. This performance and real-time architecture selection does not authorize implementation. Implementation remains blocked until the user reviews and explicitly approves the final consolidated blueprint.
 
+## 29. Documents, editors and creative workspace — confirmed
+
+The user approved a unified document-management architecture with specialised editing experiences, reliable persistence, version history and AI integration. This section records the approved direction. Implementation remains subject to approval of the final consolidated blueprint.
+
+### 29.1 Core document model — confirmed
+
+Dramora uses one unified project-content system built around four distinct concepts:
+
+1. **Project** — the container for a creative undertaking and its shared context.
+2. **Conversation** — a distinct discussion within a project.
+3. **Document** — a persistent, independently addressable creative work.
+4. **Asset** — an image, video, reference file or other media resource.
+
+Documents and assets are separate entities. Documents are not merely messages embedded in conversation history. A project can contain multiple conversations, documents and assets. Conversations may create, revise and reference documents without creating unnecessary duplicate copies.
+
+The document model must support cross-links to its project, originating or related conversations, relevant assets, document category and version history. Project-level and conversation-level context boundaries from section 27.2 remain in force.
+
+### 29.2 Editor foundation — confirmed direction
+
+Use the open-source Tiptap editor core, built on ProseMirror, as the foundation for Dramora's general creative editor and specialised screenplay editor.
+
+- Do not make paid Tiptap Cloud services a required dependency.
+- Do not assume managed collaboration or hosted document-history features are available on the Free-only architecture.
+- Use Tiptap extensions and custom node/mark schemas for Dramora-specific structures.
+- Store canonical document content as structured JSON using a versioned schema. HTML and other formats are rendered or exported representations, not the authoritative source.
+- Validate the selected Tiptap version, extension licences, export libraries and compatibility during implementation research.
+
+### 29.3 Specialised editing experiences — confirmed
+
+Dramora provides at least two editing experiences on the shared document foundation.
+
+**General creative editor**
+
+Used for concepts, ideas, synopses, story outlines, character profiles, research notes, production plans, narration, scripts and other general creative documents.
+
+Expected capabilities:
+- Headings and text formatting.
+- Ordered and unordered lists.
+- Tables, quotes and callouts.
+- Images and asset references.
+- Internal document references.
+- Search and replace.
+- Word count and relevant document statistics.
+- Undo and redo.
+- AI-assisted rewriting, expansion, summarisation and refinement.
+
+The editor should be focused and uncluttered rather than attempting to reproduce every feature of a full desktop word processor.
+
+**Dedicated screenplay editor**
+
+Use a screenplay-specific Tiptap configuration with structured screenplay elements:
+- Scene headings, including INT./EXT., location and time.
+- Action.
+- Character cues.
+- Dialogue.
+- Parentheticals.
+- Transitions.
+- Optional shot/camera-direction elements.
+
+Expected capabilities:
+- Automatic screenplay formatting and keyboard navigation.
+- Scene navigation and scene numbering.
+- Character identification and references.
+- Scene summaries.
+- Page and word statistics.
+- Screenplay preview and export.
+- Scene-level AI editing and review.
+- Links to relevant character, location and project-reference information.
+
+The screenplay representation must preserve structural distinctions between screenplay elements rather than storing the screenplay as undifferentiated rich text.
+
+### 29.4 Fountain interoperability — confirmed
+
+Support the open Fountain screenplay format for import and export.
+
+- Import Fountain into Dramora's structured screenplay representation.
+- Export a screenplay to Fountain.
+- Preserve scene headings, action, character cues, dialogue, parentheticals and transitions to the extent supported by the format.
+- Validate conversions and report unsupported or lossy elements rather than silently discarding them.
+- Fountain is an interchange format, not Dramora's sole canonical internal document representation.
+
+### 29.5 AI document operations — confirmed
+
+Dramora must support four core document-operation patterns:
+
+1. **Create document:** generate a new document and save it as a persistent project resource.
+2. **Insert content:** generate material and insert it at the selected or specified location.
+3. **Revise selection:** work on a selected paragraph, scene, section or other structured range.
+4. **Revise document:** propose a substantial revision of the document as a whole.
+
+AI operations must understand the active project, open document, selected range and relevant project context, subject to bounded retrieval and authorization.
+
+For substantial revisions, provide a review experience that makes the existing content, proposed content and differences understandable, with explicit accept/reject controls. Small changes explicitly requested by the user may be applied directly where safe.
+
+AI suggestions must not silently overwrite established or approved creative work. Apply the autonomy, approval, established-fact and consequential-action rules in section 27.3. Preserve provenance and document versions for AI-generated changes.
+
+### 29.6 Autosave and persistence — confirmed
+
+Implement reliable automatic saving as the normal editing behaviour.
+
+- Debounce ordinary typing changes; the proposed initial target is to schedule a save after approximately one second without input, subject to testing and tuning.
+- Persist validated document changes to the backend and clearly expose save state.
+- Display understandable states such as Saving, Saved, Offline, Save failed and Reconnecting.
+- Preserve unsaved edits locally when network or persistence operations fail, and retry safely when connectivity returns.
+- Prevent out-of-order saves from overwriting newer content. Use revision numbers, optimistic concurrency or an equivalent conflict-detection mechanism.
+- Provide a manual save action where useful, without making it necessary for normal operation.
+- Do not create a permanent historical version for every keystroke.
+
+Canonical persistence responsibilities:
+| Data | Authoritative location |
+|---|---|
+| Document content and metadata | Supabase PostgreSQL |
+| Version history and revision metadata | Supabase PostgreSQL |
+| Large attachments and exported files | Supabase Storage |
+| Searchable chunks and embeddings | PostgreSQL + pgvector |
+| Document editor working state | Client-side temporary state, reconciled with canonical server state |
+
+Use RLS and server-side authorization for all document and version access. Local working state is a recovery aid, not the canonical record.
+
+### 29.7 Document version history and restoration — confirmed
+
+Provide document version history from the initial product architecture.
+
+- Autosave updates the current document revision without necessarily creating a permanent snapshot for every keystroke.
+- Create historical snapshots at meaningful milestones, configured intervals or other tested boundaries.
+- Important AI-generated revisions should be identifiable in history.
+- Users can create named versions.
+- Users can inspect previous versions and restore them.
+- Restoring an older version creates a new current version based on the selected historical content; it must never erase newer history.
+- Preserve version metadata such as author/source, timestamp, revision relationship and meaningful change description where available.
+
+Version history must integrate with the Restore semantics already approved in section 27.4.
+
+### 29.8 Creative workspace interface — confirmed direction
+
+Use a responsive workspace with three principal areas:
+
+**Project navigation panel**
+- Project title and navigation.
+- Conversations.
+- Documents and folders.
+- Assets.
+- Project organisation controls.
+- Collapsible on desktop and adapted for mobile.
+
+**Central creative area**
+- General document editor.
+- Screenplay editor.
+- Document preview.
+- Asset viewer.
+- Version history and comparison/review views.
+
+**Dramora assistant panel**
+- Remains accessible while a document is being edited.
+- Understands the active document and selected content.
+- Supports contextual requests such as improving a paragraph, rewriting a scene, expanding a character, checking continuity, reviewing a screenplay or generating a scene breakdown.
+- Can be collapsed to provide more writing space.
+
+On mobile, prioritise a focused editing experience. Navigation, document actions and the assistant should be accessible through compact, responsive controls rather than forcing a desktop three-column layout onto a narrow screen.
+
+### 29.9 Document organisation — confirmed direction
+
+Support project-level folders and document categories together.
+
+Users should be able to:
+- Create folders.
+- Rename and move documents.
+- Duplicate documents.
+- Archive documents.
+- Search documents.
+- Pin important documents.
+
+Dramora may suggest or automatically assign sensible categories for generated documents, but users retain control of organisation. A suggested category must not silently move or hide existing user content.
+
+The system should support useful starter organisation such as Development, Characters, Screenplay, Production and Reference without requiring every project to use a fixed folder template.
+
+### 29.10 Import and export — confirmed direction
+
+Dramora must provide document portability and must not trap user work in a proprietary editor.
+
+**Initial export formats**
+- PDF.
+- DOCX.
+- Markdown.
+- TXT.
+- Fountain for screenplay documents.
+- Structured JSON for interchange/backup use.
+
+**Initial import formats**
+- DOCX.
+- PDF.
+- Markdown.
+- TXT.
+- Fountain.
+
+Conversion must preserve structure and content as far as reasonably possible. Where source formatting or elements cannot be represented, provide a clear conversion warning or report instead of silently discarding information.
+
+Validate the availability, quality, licensing and resource requirements of import/export libraries during implementation research. Keep file processing bounded and compatible with the Free-only infrastructure constraints.
+
+### 29.11 Collaboration scope — confirmed initial boundary
+
+Initial editing is single-user per document at a time. The architecture should not prevent future multi-user collaboration, but real-time collaborative editing is deferred until there is a demonstrated product need and a separately approved design.
+
+Do not confuse:
+- Cloudflare Durable Objects and WebSockets for application/task notifications, approved in section 28; and
+- Collaborative document synchronization, which requires conflict-aware shared editing semantics and is not included merely by having WebSockets.
+
+Future collaboration research may evaluate Yjs or an equivalent CRDT-based approach, synchronization hosting, permissions, presence, concurrent edits, offline changes and conflict recovery. Do not introduce paid managed collaboration services as a required dependency.
+
+### 29.12 Release 1 scope — confirmed direction
+
+Release 1 should include a coherent and genuinely useful document system with:
+1. Document creation and management.
+2. General creative editor.
+3. Dedicated screenplay editor.
+4. Reliable autosave and recovery of unsaved changes.
+5. Document version history and safe restoration.
+6. AI document creation, insertion, selection revision and substantial revision review.
+7. Project folders, categories and organisation.
+8. Initial document import and export formats listed above.
+9. Integration with project memory, hybrid RAG, permissions and document provenance.
+10. Responsive creative workspace with project navigation, central editor and assistant panel.
+
+Real-time multi-user collaborative editing is deliberately deferred. This does not defer the foundational document model, persistence, version history or AI integration.
+
+### 29.13 Technical validation before implementation
+
+Before production acceptance, prove:
+- Tiptap JSON documents round-trip through persistence without structural loss.
+- Document schema versions can be migrated safely.
+- Autosave handles rapid edits, out-of-order requests, refresh, offline recovery and concurrent revision conflicts without losing newer content.
+- Version snapshots, comparisons and restore-as-new-version behave correctly.
+- Screenplay nodes, keyboard navigation, Fountain import/export and screenplay preview preserve screenplay structure.
+- AI insertion and revision target the intended document/range and cannot silently overwrite protected or approved content.
+- RLS and server-side checks prevent cross-user and cross-project document, asset and version access.
+- RAG indexing updates incrementally from canonical document versions and deleted/changed content is handled correctly.
+- PDF, DOCX, Markdown, TXT, Fountain and JSON import/export are tested with representative documents, including explicit reporting of conversion limitations.
+- The workspace remains usable on mobile and does not lose edits when panels are opened, closed or navigated.
+
+### 29.14 Planning status
+
+This section records the user's approval of the proposed document, editor and creative workspace architecture. Specific library versions, detailed schema definitions, export implementation choices, autosave tuning and migration strategy remain technical implementation findings to validate; they are not fixed merely by approving this architecture.
+
+The next planning discussions are to be prepared in pairs:
+1. **Visual Assets and Media Management**
+2. **Project Continuity, Production Bible and Entity Management**
+
+Prepare both together as a researched, consolidated proposal for user review. Do not begin implementation until the final consolidated blueprint has been reviewed and explicitly approved.
+
