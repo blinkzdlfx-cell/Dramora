@@ -1,6 +1,6 @@
 # DRAMORA — Technical Blueprint
 
-**Status:** Revised after the November 20, 2026 fresh-start clarification  
+**Status:** Approved consolidated architecture; implementation in progress (November 21, 2026)  
 **Purpose:** Architecture and implementation plan for review before coding  
 **Repository:** `blinkzdlfx-cell/dramora`
 
@@ -2582,3 +2582,76 @@ This consolidated section takes precedence over earlier conflicting proposals:
 The user has authorised the consolidated architecture and commencement of implementation. This authorisation does not remove the requirement to verify current package compatibility, provider free-tier eligibility, provider privacy terms, Supabase/Cloudflare plan limits, extension support, backup feasibility and deployment behaviour before relying on them.
 
 The first implementation work must establish the foundation and verify integrations. No paid service may be enabled. No external service may be provisioned or incur cost without the user's explicit approval. Any requirement that cannot be met within the approved free-only constraints must be reported with alternatives before proceeding.
+
+
+## 32.13 Context compaction and long-conversation management
+
+Context compaction is an explicit core requirement for Dramora. It controls what is sent to a model when a conversation or project becomes too large for the selected model's context window. **It must never delete, overwrite or silently truncate the user's persisted conversation history.**
+
+### Source-of-truth hierarchy
+
+1. Canonical structured project records (accepted canon, entities, relationships, approved scenes/shots, task state and document versions) are authoritative.
+2. Persisted original conversation messages remain immutable history, subject to explicit user deletion and the retention policy.
+3. Versioned conversation summaries and project-context summaries are derived navigation aids, not replacements for the original history or canonical records.
+4. The current prompt is assembled from relevant canonical records, relevant source messages, approved summaries and the recent verbatim conversation window.
+
+A summary must never silently promote an AI suggestion into approved canon. Preserve provenance and acceptance status.
+
+### Compaction triggers and token budgeting
+
+- Estimate tokens for the assembled request using the selected model's tokenizer when available; use a conservative provider-aware estimate otherwise.
+- Reserve context capacity for system/developer instructions, retrieved project context, tool schemas/results, the new user input and a safe output allowance.
+- Trigger compaction before the request approaches the model's usable context limit. Use configurable thresholds per model/context window rather than a single hard-coded global number.
+- Re-evaluate the budget after retrieval and tool results; tool output must not bypass the budget.
+- If safe compaction cannot produce a valid request, reduce optional retrieval, ask for clarification or report that the request needs to be split. Never silently clip the user's latest message or essential instructions.
+
+### Compaction process
+
+1. Identify the conversation range and relevant project context that exceed the working budget.
+2. Build or incrementally update a structured, versioned summary.
+3. Preserve exact decisions, user constraints, accepted/rejected proposals, open questions, unresolved conflicts, named entities/IDs, important dates, task state, outputs, and source-message references.
+4. Keep a recent verbatim message window for precise conversational continuity.
+5. Store summary metadata: covered message IDs/range, source conversation/project, version, created/updated time, model/provider where appropriate, token estimate, and summary status.
+6. Validate the summary against source messages and canonical records; preserve uncertainty rather than invent missing facts.
+7. Assemble the next prompt from the summary, relevant source excerpts, canonical state and recent verbatim messages.
+8. Allow a user to inspect/correct a summary where the UI exposes conversation memory controls; corrections must be persisted as explicit user input and must not alter the original transcript.
+
+### Layered context
+
+Use separate, scoped context layers rather than one ever-growing summary:
+- **Recent conversation window:** newest messages, kept verbatim.
+- **Conversation summary:** decisions, current objective, local context and unresolved questions for that conversation.
+- **Project context summary:** cross-conversation project state, major decisions and active work.
+- **Structured project memory / Project Bible:** canonical entities, accepted facts, relationships and provenance.
+- **User preferences:** only relevant preferences, kept separate from project-specific facts.
+
+Retrieve only the layers and source excerpts relevant to the current request. Never inject every conversation or the full project history by default.
+
+### Safety and correctness rules
+
+- Compaction is context preparation, not data deletion or archival.
+- Original messages and canonical project records remain recoverable according to the product's retention/deletion policy.
+- Never compact away the current user message, active safety instructions, explicit constraints, approval/rejection decisions, unresolved conflicts, or critical task checkpoints.
+- Do not merge different projects or conversations into one summary without clear scope and source references.
+- Do not treat a generated summary as more authoritative than its source messages or approved structured records.
+- If summary generation fails, preserve source history and fall back to bounded retrieval/recent messages; report when the context could not be fully reconstructed.
+- Rebuild or refresh summaries when source messages are edited/deleted under permitted controls, when project canon changes materially, or when validation detects stale/inconsistent summaries.
+- Compaction operations must be idempotent, versioned and observable. Record the source range and summary version so repeated jobs do not lose content.
+- Respect RLS and project access boundaries throughout summary creation, storage and retrieval. Never place private project content in an unrelated user's context.
+
+### Acceptance criteria
+
+- A long conversation can continue beyond one model context window without losing its original persisted history.
+- A new request can recover relevant earlier decisions and constraints without loading the entire transcript.
+- A user decision, correction, approval, rejection or unresolved question remains traceable to source messages.
+- The latest user message and required instructions are never silently truncated.
+- Compaction failure does not delete or corrupt the source conversation.
+- Tests cover token-budget boundaries, multiple conversations per project, project isolation, summary refresh, stale summaries, retries and restore from persisted source history.
+
+## 32.14 Repository documentation policy
+
+Dramora maintains exactly two primary living project documents:
+1. `DRAMORA_TECHNICAL_BLUEPRINT.md` — the authoritative product, architecture, security, data, reliability and implementation specification.
+2. `IMPLEMENTATION_UPDATES.md` — chronological implementation record containing completed work, changed files/PRs, validation evidence, known limitations, decisions requiring follow-up and the next implementation step.
+
+Do not create additional planning, architecture, phase-status, changelog or progress documents. Put new durable architectural decisions in the blueprint and implementation evidence/progress in the updates document. Code-level comments and required machine configuration files are not project-document substitutes. Keep the two documents synchronised in the same implementation batch or closely linked PRs.
