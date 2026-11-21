@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, "phase-0/**"]
+    branches: [main, "phase-0/**", "phase-1/**"]
 
 permissions:
   contents: read
@@ -24,6 +24,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 3.0.0
+      - name: Generate initial schema migration with Supabase CLI
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            supabase init
+          fi
+          if ! compgen -G "supabase/migrations/*_dramora_core_schema.sql" > /dev/null; then
+            supabase migration new dramora_core_schema
+            node scripts/write-core-migration.mjs
+          fi
       - name: Install pinned dependencies and generate lockfile
         run: npm install --no-audit --no-fund
       - name: Verify installed dependency tree
@@ -32,21 +45,17 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
-      - name: Commit reproducible lockfile
+      - name: Commit generated migration and reproducible lockfile
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          if [ ! -f package-lock.json ]; then
-            echo "npm did not produce package-lock.json."
-            exit 1
-          fi
-          git add package-lock.json
+          git add package-lock.json supabase
           if git diff --cached --quiet; then
-            echo "package-lock.json is already current."
+            echo "Generated files are already committed."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: add reproducible npm lockfile [skip ci]"
+          git commit -m "chore: add Supabase migration and reproducible lockfile"
           git push origin "HEAD:${GH_HEAD_REF}"

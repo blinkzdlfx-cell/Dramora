@@ -9,3 +9,7 @@ dist-ssr
 coverage
 .vite
 *.tsbuildinfo
+
+# Supabase CLI local state (not portable source/configuration)
+supabase/.temp/
+supabase/.branches/

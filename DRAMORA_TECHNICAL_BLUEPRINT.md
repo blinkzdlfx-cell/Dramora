@@ -2655,3 +2655,53 @@ Dramora maintains exactly two primary living project documents:
 2. `IMPLEMENTATION_UPDATES.md` — chronological implementation record containing completed work, changed files/PRs, validation evidence, known limitations, decisions requiring follow-up and the next implementation step.
 
 Do not create additional planning, architecture, phase-status, changelog or progress documents. Put new durable architectural decisions in the blueprint and implementation evidence/progress in the updates document. Code-level comments and required machine configuration files are not project-document substitutes. Keep the two documents synchronised in the same implementation batch or closely linked PRs.
+
+
+## 32.15 Initial Supabase authentication and persistence schema
+
+The first implementation uses the existing dedicated Dramora Supabase project and PostgreSQL 17.12. It does not create another database or project.
+
+### Browser authentication boundary
+
+- Use the pinned `@supabase/supabase-js` client with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- Publishable keys are intentionally browser-visible; database access is constrained by grants and RLS.
+- Never place secret/service-role keys or AI provider credentials in Vite variables or browser bundles.
+- Use PKCE auth flow, persisted sessions, automatic token refresh and URL callback detection.
+- Release 1 account entry supports email/password registration and sign-in, password reset and password recovery.
+- Authorization decisions must never rely on user-editable `user_metadata`; use `auth.uid()`/verified identity and database policies.
+- Authentication UI state is an application concern; assistant-ui does not own authentication or persistence.
+
+### Initial application tables
+
+The initial migration creates four user-owned public tables:
+
+1. `profiles`: one row per Auth user; display name and optional avatar object path.
+2. `projects`: owner, user-defined title, studio (`ai_video` or `film`), lifecycle status and timestamps.
+3. `conversations`: project and owner, editable conversation title, lifecycle status and activity timestamps.
+4. `messages`: conversation and owner, role, structured JSON content, lifecycle status, metadata, optional idempotency key and creation time.
+
+Use composite foreign keys to guarantee that a conversation belongs to a project with the same owner and a message belongs to a conversation with the same owner. Keep canonical project and conversation records separate from messages and derived context summaries.
+
+### Access and history rules
+
+- Enable RLS on every application table.
+- Grant the `authenticated` role only the table privileges required by its use cases; grant no application-table access to `anon` or `PUBLIC`.
+- Scope reads and writes to `(select auth.uid())`.
+- Update policies must include both `USING` and `WITH CHECK`.
+- Browser clients may append their own `user` messages and read their own conversation history.
+- Browser clients cannot update or delete messages. Trusted server-side orchestration writes `assistant` and `tool` messages after validating the authenticated owner.
+- Project/conversation deletion is owner-scoped and cascades only through that owner's relational tree.
+- Add explicit grants because Supabase's 2026 Data API change no longer automatically exposes new public tables to API roles by default.
+- Keep local CLI `auto_expose_new_tables = false` so local behavior matches the explicit-grant security posture.
+
+### Migration and CLI rules
+
+- Version all database changes under `supabase/migrations/`.
+- Generate timestamped migration files using `supabase migration new`; do not hand-invent migration filenames.
+- Supabase CLI v3 changes hosted command defaults: local database commands target the local stack, and hosted writes require explicit remote targeting and confirmation. Never assume a CLI command is targeting the hosted project.
+- The initial migration is additive. Apply it to the dedicated Dramora project only after reviewing the SQL and passing CI.
+- Verify table grants, RLS, foreign keys and cross-user isolation after application. A successful migration alone is not proof of correct access control.
+
+### Existing project hardening
+
+The inspected project already contains a Postgres event trigger named `ensure_rls`, owned by `postgres`, which calls `public.rls_auto_enable()` to enable RLS on newly-created public tables. Preserve the event trigger, but revoke direct `EXECUTE` privileges on its trigger function from `PUBLIC`, `anon` and `authenticated` when it exists. This prevents browser roles from receiving an unnecessary function privilege while keeping the database-owned trigger active.
