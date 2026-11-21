@@ -2236,3 +2236,349 @@ Before production acceptance, validate:
 This section records the user's approval of the Project Bible, entity, scene, shot, scene-segmentation, continuity and Project Relationship Map architecture described here. The detailed relational schema, graph rendering library, generation-platform capability registry, segment-boundary algorithms and exact UI layout remain implementation research and design tasks. They must be validated against the approved architecture and Free-only constraints before implementation.
 
 The overall product remains subject to the user's requirement that the final consolidated technical blueprint be reviewed and explicitly approved before coding begins.
+
+
+---
+
+# 32. Final consolidated architecture decisions — November 21, 2026
+
+**Status:** Consolidated from the user's approved planning decisions. This section is authoritative wherever earlier sections conflict with it. The user explicitly authorised consolidation and the start of implementation on November 21, 2026.
+
+## 32.1 Product scope and operating model
+
+Dramora has exactly two studios:
+1. **AI Video Studio** — creative development and complete production preparation for AI-video projects.
+2. **Film Studio** — film/story development, professional screenplay work and production preparation.
+
+There is one user-facing assistant: **Dramora**. LangGraph, where validated and appropriate, is an internal orchestration implementation detail; it is not a separate assistant or product identity.
+
+Dramora understands before creating, plans before executing, and preserves completed work. Users can work conversationally without being forced through long setup forms. Users control project titles; conversation titles are generated automatically and remain editable. A project can contain multiple conversations with shared project context and distinct conversation context.
+
+The product is a creative planning, writing, research and production-management workspace. External platforms perform actual image/video generation and professional media editing. Dramora prepares the concepts, scripts, scenes, shots, prompts, references, continuity information and production materials needed to use those platforms. Dramora must never imply that it generated media when it only prepared instructions.
+
+The architecture should leave room for future expansion, but future possibilities are not Release 1 commitments. Possible later capabilities include native image/video generation, audio/voice generation, video editing, advanced storyboarding, external integrations, collaboration and advanced media management. Each requires separate feasibility, free-tier, privacy and approval review.
+
+## 32.2 Release 1 scope and boundaries
+
+Release 1 is a coherent, substantial product, not a deliberately crippled MVP. It includes:
+
+**Shared platform**
+- Public landing page and account registration/login.
+- Supabase Auth and private user workspace.
+- Project and conversation management.
+- One Dramora assistant across the two studios, with studio-aware context.
+- Guided, Balanced (default) and Autonomous modes.
+- Durable background tasks, progress, checkpoints, approvals, stop/continue/retry and recovery.
+- Persistent conversations and bounded context retrieval.
+- Project Bible, structured project memory and provenance.
+- Documents, editing, autosave, meaningful version history, restore-as-new-version, folders and import/export.
+- Visual reference cards, prompts, entity profiles and Production Reference Packs.
+- Project Relationship Map and relevant continuity/impact checks.
+- Storage lifecycle management and usage visibility.
+- Security, privacy, legal disclosures, operational monitoring and tested backup/export recovery.
+- Responsive desktop and mobile workspace.
+
+**AI Video Studio**
+- Conversational concept and format development for social videos, advertising, YouTube, music videos, documentaries, educational content, cinematic storytelling and other user-defined video work.
+- Script, narration, scene, shot and duration planning appropriate to the user's intent.
+- Character, location, prop, costume and other visual entity development.
+- Image/video prompt authoring and platform-adapted prompt instructions.
+- Research into external generation platforms, with current source-backed capability checks.
+- Generator-aware scene segmentation, continuity handoffs and production preparation.
+- Reference cards, scene/shot workspaces and exportable production packs.
+
+**Film Studio**
+- Concept, premise, theme, logline, synopsis, genre and story development.
+- Story structure, acts, sequences, plot, conflict, turning points and endings.
+- Character histories, motivations, relationships and arcs.
+- World/location development.
+- Professional screenplay creation, revision, review and a dedicated screenplay editor.
+- Structured screenplay-to-scene links and change-impact review.
+- Scene breakdowns, cast, locations, props, costumes, shooting schedules, production notes and call sheets.
+- Project documents and exportable production materials.
+
+The detailed Project Bible, scene, shot, segment, reference-card and document requirements in sections 29–31 are Release 1 requirements, subject to the technical validation gates already recorded there. The product must support lightweight workflows for simple videos as well as deeper cinematic workflows when appropriate.
+
+## 32.3 AI provider policy and model groups
+
+Approved providers:
+- **Cloudflare Workers AI**
+- **Google Gemini API**
+- **GroqCloud**
+
+OpenRouter is explicitly excluded and must not be reintroduced.
+
+Strict free recurring usage is mandatory:
+- No paid upgrades or paid credits.
+- No automatic paid usage or paid billing fallback.
+- No hidden charges.
+- No reliance on temporary trial credits.
+- A free tier that requires a payment method is not automatically considered an acceptable sustainable free option; verify the actual provider/account requirements.
+- When a quota is exhausted, pause/defer or use only an already-approved compatible free alternative.
+- Provider/model availability, rate limits, data policies and free eligibility must be rechecked against official documentation and the actual account console before enabling production use.
+
+Do not assign a separate model to every item in the 120-task inventory. Organise model capability into these broad groups:
+1. **Main Intelligence and Production Models** — conversation, reasoning, planning, creative development, screenplay, documents and structured workflows.
+2. **Lightweight Background Models** — titles, summaries, classification and small repetitive tasks.
+3. **Visual Intelligence** — image understanding, visual analysis and document interpretation.
+4. **Image Generation** — capability group reserved for a future approved integration; not a Release 1 native generation feature.
+5. **Audio Specialists** — transcription and related audio capabilities.
+6. **RAG Support** — embeddings and retrieval support.
+7. **Safety Support** — prompt-injection detection and content classification.
+
+Use a capability-aware router within each group. Keep provider-specific code behind small adapters. Do not create a large routing framework before actual provider integrations justify it. Deterministic application operations must remain ordinary code, not AI calls. Preserve room to add models later.
+
+The 120-task inventory is a functional task inventory, not 120 model assignments. Select models by broad capability, context requirements, latency, reliability, quota and privacy. Model selection must not over-engineer quality scoring or add needless model calls.
+
+### Audio specialists
+
+Retain both Whisper variants through GroqCloud, subject to current free quota and availability:
+- Default transcription: Whisper Large V3 Turbo.
+- Higher-accuracy alternative: Whisper Large V3.
+- Use only the approved Groq free quota; no paid fallback.
+- Do not assume the Turbo model supports translation-to-English; its supported task differs from full Whisper Large V3.
+
+### Candidate models are not guaranteed production approvals
+
+The previously researched Cloudflare, Gemini and Groq model names are candidates, not guarantees of current free availability. Verify exact model IDs, free eligibility, limits and provider terms before enabling them. In particular, Cloudflare's catalogue may contain models that require a paid Workers plan or otherwise do not fit the free-only policy. Do not activate a model solely because it appears in a catalogue.
+
+## 32.4 Backend and infrastructure — authoritative direction
+
+Use **one primary database: Supabase PostgreSQL**. Do not introduce Cloudflare D1, Neon or another database as an additional production database. Supabase remains the system of record.
+
+Planned backend responsibilities:
+- Supabase Auth for identity.
+- Supabase PostgreSQL for canonical application records.
+- PostgreSQL RLS for data isolation and database-enforced permissions.
+- Supabase Storage for private file objects.
+- Supabase Edge Functions for protected server-side business logic, AI orchestration and privileged operations where appropriate.
+- Supabase Queues/pgmq for durable queued work where appropriate.
+- Supabase pgvector plus PostgreSQL full-text search for approved hybrid retrieval.
+- Supabase Cron only where its free availability and operational suitability are verified.
+
+Do not route every CRUD operation through an Edge Function. Ordinary authorised reads/writes may use the Supabase client directly with RLS. Use Edge Functions for operations that require protected secrets, privileged checks, orchestration or server-side processing. Batch related operations and avoid unnecessary function invocations.
+
+Cloudflare is a supporting edge platform, not a second database or heavy compute platform:
+- Cloudflare Workers for lightweight edge routing/delivery where useful.
+- Cloudflare Durable Objects and WebSockets for realtime notification delivery where justified.
+- Polling is the recovery fallback for notifications.
+- Cloudflare CDN/frontend delivery as validated against the selected deployment architecture.
+- Keep Worker CPU work minimal because the Free plan's per-request CPU constraint is restrictive.
+- Do not use Cloudflare D1.
+- Do not use Cloudflare Workflows or Hyperdrive as required architecture components. This supersedes earlier proposals in sections that list them as planned dependencies.
+
+Supabase PostgreSQL remains authoritative for task status, checkpoints, approvals, project data and outputs. Realtime transport is not the source of truth. A dropped WebSocket must not lose task state.
+
+Use strict free recurring plans only. Before deployment, revalidate official plan limits, pausing behaviour, invocation limits, storage limits, execution limits, data transfer limits and whether any required feature is paid-only. Never silently enable a paid service.
+
+## 32.5 AI workflow execution and autonomy
+
+Expose three modes:
+- Guided.
+- Balanced (default).
+- Autonomous.
+
+Provide Stop, Continue, Retry and Restore controls. Restore applies to document/version history; it must not be presented as an arbitrary rollback of external side effects.
+
+Substantial workflows must be durable and backend-owned. Persist task ID, status, input, stage, checkpoint, retry state, stop request, approvals, outputs, errors and timestamps. Browser refresh, tab closure or connection loss must not cancel durable tasks. Reconnection must restore actual persisted state.
+
+Use checkpoints, idempotency keys, unique operation identifiers, bounded retries/backoff and output verification. Never claim exactly-once execution across external providers. Aim for effectively-once persisted application outcomes where feasible.
+
+User approval is required for consequential changes and protected creative work. Approval records persist. AI suggestions do not become canon until accepted. A stop request must be persisted and observed at safe checkpoints; do not promise instant interruption of a provider request already in flight.
+
+## 32.6 Project memory, RAG and retrieval
+
+RAG is a core architecture capability, implemented with Supabase PostgreSQL and pgvector, not a separate vector database.
+
+Use hybrid retrieval:
+- Semantic vector retrieval.
+- PostgreSQL full-text retrieval.
+- Reciprocal Rank Fusion or a validated equivalent to combine results.
+
+Use content-aware chunking for screenplay scenes, character/entity sections, acts/sequences, document headings and conversation summaries. Store source IDs, document/version references, project scope, chunk hashes and provenance. Retrieval must be scoped by authenticated user, project, studio and resource permissions.
+
+Embedding model and vector dimensions remain subject to benchmark and current free-tier verification. Embeddings are derived/regenerable data, not canonical project truth. Query and document embeddings must use the same model and dimensions; never mix vector spaces. Incremental re-indexing must verify replacement chunks before deleting obsolete ones. If embedding quota is exhausted, continue PostgreSQL full-text search and pause semantic indexing until quota is available.
+
+Use bounded retrieval, not indiscriminate submission of all project history. Distinguish project memory, structured canon, conversation summaries and user-level preferences.
+
+## 32.7 Security, privacy and legal requirements
+
+Security and privacy are foundational Release 1 requirements.
+
+**Authentication and authorisation**
+- Supabase Auth is the identity authority.
+- RLS protects all user-owned records.
+- Server-side functions independently validate permissions before privileged operations.
+- Never trust browser-supplied user/project identifiers without authentication and ownership checks.
+- Keep service-role credentials and provider keys server-side only.
+- Private storage buckets and authorised access by default.
+
+**Secrets**
+- Use server-side secret management.
+- Never place provider keys, service-role keys, tokens or credentials in browser bundles, ordinary project records or AI prompts.
+- Support credential rotation and avoid logging secrets.
+
+**Untrusted content and prompt injection**
+- Treat imported documents, scripts, research content, web pages and user-supplied files as untrusted input.
+- Separate system instructions from untrusted content.
+- Detect and constrain prompt injection.
+- Validate model-generated structured outputs.
+- AI-discovered instructions inside a document must never become executable instructions automatically.
+- Read-only tools and mutation tools must have separate permission boundaries.
+- Destructive/consequential operations require application authorisation and suitable confirmation.
+
+**Privacy policy**
+- Projects are private by default.
+- No public sharing unless the user explicitly enables it.
+- Users own their creative work and project materials, subject to applicable law and third-party rights.
+- Dramora will not use private creative project content to train or improve Dramora's own AI systems.
+- Send external providers only the minimum context needed for the current task.
+- Never send passwords, authentication tokens or private credentials to models.
+- External AI providers have their own data-handling terms. Disclose relevant external processing and verify each provider's applicable retention/training terms before production use. Do not imply that Dramora's own no-training policy controls external providers.
+- Provide appropriate data export, archive and deletion controls.
+
+**Legal pages and contextual notices**
+Create dedicated public Terms of Service and Privacy Policy pages. Include relevant copyright/intellectual-property, AI accuracy, external-platform responsibility, commercial-use, production-safety and limitation-of-liability terms. Make both policies accessible during registration, login and account settings. Registration must capture explicit acceptance of the applicable policy versions where legally appropriate. Store policy version and acceptance timestamp. Material policy changes must trigger an appropriate re-acceptance flow.
+
+Show contextual notices where relevant, including external AI processing and limitations of AI-generated information. Do not bury material disclosures exclusively in a long legal document.
+
+Dramora is not a legal adviser, copyright authority, production-safety certifier or guarantee of commercial success. Users remain responsible for reviewing outputs, third-party rights, external platform terms and real-world production safety. Obtain jurisdiction-appropriate legal review before public launch; the product must not claim that generic disclaimers eliminate liability.
+
+## 32.8 Database Storage Lifecycle Management
+
+Implement a permanent backend capability named **Database Storage Lifecycle Management**.
+
+Classify data as:
+1. Active user data.
+2. Historical/versioned data.
+3. Temporary operational data.
+4. Regenerable/derived data.
+5. User-deleted data within its recovery window.
+
+Protect projects, final/approved documents, screenplay materials, accepted canon, approved reference cards/prompts, important conversations and user-created production resources. Never automatically delete protected creative work merely because a storage threshold is approaching.
+
+Temporary outputs, expired caches, abandoned uploads, completed temporary task details, obsolete embeddings and duplicate indexing jobs may be cleaned according to explicit, documented retention policies. Exact retention periods and thresholds must be selected after measuring actual usage and reviewing the applicable free limits; previously discussed durations/percentages are proposals, not fixed approved constants.
+
+Archiving must not silently delete original conversation history. User deletion must explain the recovery period and final deletion consequence. Storage object deletion must be coordinated with database references; deleting a row does not delete the corresponding Storage object.
+
+Monitor database size, largest tables/indexes, vector growth, conversation/version growth, Storage use, cleanup backlog and growth rate. Cleanup must be batched, idempotent, FK-safe, audited and conservative. PostgreSQL DELETE does not immediately shrink allocated database size; account for MVCC, vacuum and bloat. Do not run disruptive maintenance such as VACUUM FULL routinely.
+
+Provide a storage dashboard showing usage, major categories, temporary/regenerable data, cleanup history and estimated recoverable space. If limits are approached, clean eligible temporary/derived data first, then warn or restrict nonessential writes. Never sacrifice important user content automatically.
+
+## 32.9 Reliability, backup, portability and disaster recovery
+
+All substantial tasks use durable backend state, checkpoints, idempotency, bounded retries and safe resume. Provider failures must be classified:
+- Transient availability/network error: bounded retry with backoff.
+- Rate limit: respect provider retry instructions and quota.
+- Free quota exhausted: pause/defer or use an already-approved free alternative.
+- Invalid response: validate and retry within limits.
+- Model unavailable: route only to a compatible approved model.
+- All approved providers unavailable: pause and inform the user.
+- Authentication/configuration failure: stop and report clearly without exposing secrets.
+
+The browser is never responsible for keeping an important task alive. Polling must recover missed notifications. Errors shown to users must be understandable and must not expose raw secrets or internal stack traces.
+
+### Portable PostgreSQL backup and restoration
+
+Database portability is a first-class requirement. Supabase remains the initial primary database; this requirement does not authorise adding Neon, D1 or another database now.
+
+Maintain version-controlled schema migrations and database logic. The backup/export path must use standard PostgreSQL logical backup/restore capabilities (for example, custom-format `pg_dump`/ `pg_restore` where supported) and include:
+- Schemas, tables and data.
+- Primary/foreign keys, constraints and sequences.
+- Indexes, views and materialized views.
+- Functions, procedures and triggers.
+- RLS policies and grants.
+- Required extension declarations and compatibility information.
+- Relevant role/grant definitions, handled securely and adapted to the destination.
+
+The restore process must check PostgreSQL version, extension availability, required roles, ownership and platform-specific dependencies before applying the backup. Do not promise a one-click restore to an arbitrary PostgreSQL host without these checks.
+
+A PostgreSQL dump does not by itself reproduce the entire Supabase platform. Keep separate, version-controlled and recoverable manifests/source for:
+- Supabase Auth configuration and identity migration requirements.
+- Storage bucket configuration and actual object files.
+- Edge Function source code and deployment configuration.
+- Function secrets and environment configuration (encrypted; never included in plaintext backups).
+- Realtime/publication settings and other Supabase-specific service configuration.
+- Provider and OAuth settings requiring destination credentials.
+
+Provide a documented, automated-as-possible restore workflow for another compatible Supabase project and a separate compatibility path for a plain PostgreSQL destination. A plain PostgreSQL restore preserves database logic/data where compatible, but Supabase Auth, Storage, Edge Functions and Realtime need compatible replacement services or a compatible self-hosted Supabase environment.
+
+Backup files must be encrypted, checksummed, independently stored outside the source database/project, access-controlled and retention-managed. Never treat a backup stored only in the same database/project as sufficient disaster recovery. Keep credentials out of backup archives or encrypt them separately with explicit key handling.
+
+Create full project exports as downloadable archives. Include project metadata, conversations, documents and versions, Project Bible/entities/relationships, scenes/shots/segments, reference cards/prompts, production materials and the metadata required to reconstruct relationships. Include actual file objects only when they exist and the user is authorised to export them. Use portable documented formats and a manifest; do not make the project export dependent on undocumented database internals.
+
+Test restoration periodically into an isolated compatible destination. Verify database functions, triggers, RLS, permissions, relationships, key queries, Edge Function redeployment, storage object references and critical application workflows. A successful backup job is not proof of recoverability. Record restore-test results and report anything not restored.
+
+Supabase Free backup/PITR guarantees must not be assumed. Verify the current official plan. If native automated backups are unavailable on the free plan, implement an independently stored export strategy within the strict free recurring-cost requirement. If a free backup destination cannot be secured without a payment method or paid tier, disclose that limitation and pause for an approved solution rather than silently incur charges.
+
+### Document and project recovery
+
+- Debounced autosave; do not create a permanent version for every keystroke.
+- Meaningful versions at milestones and before substantial AI revisions.
+- Preserve approved versions.
+- Restore by creating a new version.
+- Recover unsaved local edits where technically feasible and clearly show their status.
+- Detect concurrent edits and avoid silent overwrites.
+- Project deletion uses a documented recovery window before permanent removal.
+- Reconcile interrupted tasks and storage objects after restore.
+
+## 32.10 Release sequencing and implementation gates
+
+Implementation proceeds in bounded, reviewable phases. Do not attempt to implement every Release 1 feature in one change.
+
+**Foundation phase**
+- Repository and project setup.
+- React + Vite + TypeScript foundation, Tailwind and shadcn/ui.
+- Responsive application shell and routing.
+- Supabase project integration, Auth, initial schema/migrations and RLS.
+- Environment/secret handling.
+- CI, type checking, linting, tests and deployment preview.
+- Architecture decision records and operational baseline.
+
+**Core platform phase**
+- Projects, conversations and message persistence.
+- Dramora model/provider adapter and approved model groups.
+- Guided/Balanced/Autonomous controls.
+- Durable task records, checkpoints, stop/retry/continue and recovery.
+- Documents, editor, autosave, versions and import/export.
+- Project Bible, structured memory and RAG foundations.
+- Security and privacy controls.
+
+**Studio capabilities phase**
+- AI Video Studio workflows.
+- Film Studio story/screenplay workflows.
+- Scene/shot/segment system.
+- Visual reference cards, prompts and Production Reference Packs.
+- Continuity and screenplay change-impact review.
+- Project Relationship Map and production documents.
+
+**Reliability and release hardening**
+- Storage lifecycle dashboard and cleanup.
+- Portable database backup/export/restore.
+- Full project export.
+- Restore drills and recovery verification.
+- Security tests, RLS isolation tests, prompt-injection tests, monitoring, legal pages and launch checks.
+
+The exact task breakdown, dependency order and acceptance criteria must be maintained in the repository and updated as implementation evidence is gathered. Each phase must be tested before moving to dependent work. Do not mark a feature complete based solely on compilation or a successful deployment.
+
+## 32.11 Final reconciliation of superseded proposals
+
+This consolidated section takes precedence over earlier conflicting proposals:
+- Supabase PostgreSQL is the only planned primary database. D1 and Neon are not part of the current architecture.
+- Cloudflare Workflows and Hyperdrive are not required components.
+- Cloudflare Workers must remain lightweight; Supabase is authoritative for durable task/project state.
+- Do not add a separate vector database. RAG uses Supabase PostgreSQL/pgvector and full-text search.
+- Dramora does not natively generate images or videos in Release 1; the Image Generation model group is reserved for future approved capability.
+- GroqCloud is approved; OpenRouter is excluded.
+- Only sustainable recurring free tiers are permitted; no paid fallback.
+- Private creative project content is not used to train/improve Dramora's own AI systems.
+- Supabase-specific services are separate from portable PostgreSQL database logic and must be backed up/configured separately.
+- Storage lifecycle management must protect user-created creative work.
+- Legal pages and contextual notices are Release 1 requirements.
+- This section supersedes any earlier statements that the blueprint is awaiting approval. The user authorised consolidation and implementation on November 21, 2026.
+
+## 32.12 Implementation authorisation and remaining verification
+
+The user has authorised the consolidated architecture and commencement of implementation. This authorisation does not remove the requirement to verify current package compatibility, provider free-tier eligibility, provider privacy terms, Supabase/Cloudflare plan limits, extension support, backup feasibility and deployment behaviour before relying on them.
+
+The first implementation work must establish the foundation and verify integrations. No paid service may be enabled. No external service may be provisioned or incur cost without the user's explicit approval. Any requirement that cannot be met within the approved free-only constraints must be reported with alternatives before proceeding.
