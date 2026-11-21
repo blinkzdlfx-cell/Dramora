@@ -2705,3 +2705,14 @@ Use composite foreign keys to guarantee that a conversation belongs to a project
 ### Existing project hardening
 
 The inspected project already contains a Postgres event trigger named `ensure_rls`, owned by `postgres`, which calls `public.rls_auto_enable()` to enable RLS on newly-created public tables. Preserve the event trigger, but revoke direct `EXECUTE` privileges on its trigger function from `PUBLIC`, `anon` and `authenticated` when it exists. This prevents browser roles from receiving an unnecessary function privilege while keeping the database-owned trigger active.
+
+
+### Least-privilege default grants
+
+Supabase projects may have broad default ACLs for objects created by `postgres`. RLS does not protect against every SQL privilege (notably `TRUNCATE`), so explicit per-table grants alone are insufficient if inherited grants remain.
+
+- For application tables, revoke all privileges from `PUBLIC`, `anon` and `authenticated` before granting the exact required operations.
+- Tighten PostgreSQL default privileges for future `postgres`-created objects in the `public` schema: no automatic table privileges, sequence privileges or function execution for `PUBLIC`, `anon` or `authenticated`.
+- Regrant only the operations listed for each table.
+- After every schema migration, verify effective privileges with `has_table_privilege` and inspect default ACLs, not only RLS policies.
+- Verify RLS isolation with at least two distinct authenticated identities and ensure tests roll back all synthetic data.
