@@ -119,7 +119,6 @@ assistant-ui's ExternalStoreRuntime is the current candidate because Dramora nee
 4. Once the foundation is verified and merged, begin the Supabase foundation: client/server boundaries, Auth integration, first migrations, RLS and automated isolation tests.
 5. Do not start production chat/provider orchestration until the persistence and security boundary is in place.
 
-
 ## 2026-11-21 — Phase 0 verified and merged
 
 **Pull request:** [#2 — Phase 0: establish Dramora React and Vite foundation](https://github.com/blinkzdlfx-cell/Dramora/pull/2)  
@@ -237,7 +236,6 @@ Do not begin AI provider orchestration or production chat execution until authen
 
 **Pull request:** [#5 — Security hardening: remove inherited public-schema grants](https://github.com/blinkzdlfx-cell/Dramora/pull/5)  
 **Merge commit:** `675de51e0fb77c4c65fa7342517af0983791ed9b`
-
 ### Why the follow-up migration was required
 - After the initial schema migration, inspection of `information_schema.role_table_grants` showed that the Supabase project's inherited default ACLs still gave `authenticated` broad table privileges, including `TRUNCATE`, `REFERENCES` and `TRIGGER`.
 - RLS does not protect against `TRUNCATE`; relying on RLS alone would have left a dangerous privilege path.
@@ -357,8 +355,7 @@ The browser will be able to read only its own task/summary records. Task executi
 **Pull request:** [#7 — Phase 3: add durable task and context compaction storage](https://github.com/blinkzdlfx-cell/Dramora/pull/7)  
 **Merge commit:** `ce4fe9270add098854816b8003ca6b40e7a8577b`
 
-### Implemented and applied to the hosted Dramora database
-- `tasks`: durable server-owned task state, checkpoints, retry counters, approval state, stop requests and result/error fields.
+### Implemented and applied to the hosted Dramora database- `tasks`: durable server-owned task state, checkpoints, retry counters, approval state, stop requests and result/error fields.
 - `task_events`: append-only task event history with ordered per-task sequence numbers.
 - `task_control_requests`: owner-scoped stop/continue/retry/approve/reject requests.
 - `conversation_summaries`: versioned structured conversation summaries and covered-message metadata.
@@ -434,3 +431,26 @@ The browser will be able to read only its own task/summary records. Task executi
 
 - Regenerated `src/lib/supabase/database.types.ts` from the live schema, including tasks, task events, task-control requests and summary/provenance tables.
 - GitHub Actions run #75 passed Supabase CLI setup, dependency installation, dependency verification, TypeScript type-check and production build.
+
+## 2026-11-21 — Production authentication UI follow-up
+
+**Pull request:** [#10 — Fix auth loading UI and password visibility](https://github.com/blinkzdlfx-cell/dramora/pull/10)
+
+### Changes
+- Replaced the header's visible `Checking session...` text with an accessible shimmer placeholder.
+- Added a landing/workspace skeleton while the persisted Supabase session is being restored, preventing the logged-out landing page from flashing before auth state is known.
+- Added accessible show/hide controls to password fields, including the password confirmation field.
+- Improved browser-level `Failed to fetch` handling. The UI now identifies it as a network/reachability failure rather than presenting it as an invalid password, and the original exception is logged for diagnosis.
+
+### Diagnostic evidence and limitation
+- Supabase project `hiyevsafaiehlzuqcngf` was rechecked and reports `ACTIVE_HEALTHY`; the API URL returned by Supabase is `https://hiyevsafaiehlzuqcngf.supabase.co`.
+- Supabase's current breaking-change changelog contains no relevant JavaScript Auth change affecting this implementation.
+- A live browser/network reproduction could not be performed in this session. The reported `Failed to fetch` is a browser-level network error, so it does not establish that the email/password data is invalid. The exact failing request and browser network/console details are still required if the issue persists after the UI fix.
+- The PR must pass CI before merge. Registration and sign-in must then be retested against the production deployment; a successful build alone does not verify authentication.
+
+### Next steps
+1. Review PR #10 and confirm type-check/build checks pass.
+2. Merge and wait for the production deployment.
+3. Retry registration. If it still fails, capture the failed request URL/status and the browser console's full network/CORS message (do not share passwords or auth tokens).
+4. Verify email confirmation, sign-in, refresh persistence and password recovery before moving on to persisted chat messages.
+
