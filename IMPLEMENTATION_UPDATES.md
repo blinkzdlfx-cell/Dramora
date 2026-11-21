@@ -76,3 +76,45 @@ assistant-ui's ExternalStoreRuntime is the current candidate because Dramora nee
 - A minimal ExternalStoreRuntime provider type-checks and renders in the Vite app.
 - No secrets are bundled into client code.
 - CI result and generated lockfile are recorded before PR #2 is considered verified.
+
+
+## 2026-11-21 — Phase 0.2: UI primitives and assistant-ui runtime bridge
+
+**Implementation branch:** `phase-0/react-vite-foundation`  
+**Pull request:** [#2 — Phase 0: establish Dramora React and Vite foundation](https://github.com/blinkzdlfx-cell/Dramora/pull/2)
+
+### Changes added to PR #2
+- Added shadcn/ui project configuration for the existing Vite + React + TypeScript + Tailwind CSS v4 application.
+- Added shared `cn()` utility using `clsx` and `tailwind-merge`.
+- Added reusable Button and Card primitives using class-variance-authority.
+- Updated the landing screen to use the shared Button/Card primitives.
+- Added `@assistant-ui/react` and a Dramora-owned `ExternalStoreRuntime` bridge.
+- The runtime bridge accepts a conversation ID, initial persisted messages and an application-owned send handler. It does not own canonical persistence.
+- Added the `@/*` TypeScript alias to both the root and app TypeScript configurations.
+- Removed the temporary README so the repository follows the approved two-document rule.
+
+### Design decision confirmed by current assistant-ui documentation
+- Use `ExternalStoreRuntime` because Dramora must own conversation history, task state, persistence, cancellation and recovery.
+- The assistant-ui runtime is a presentation/input adapter, not the source of truth.
+- Do not assume the custom Dramora streaming protocol is compatible with assistant-ui Data Stream. Add an explicit adapter only after the backend event contract is defined.
+- Keep LangGraph behind the application service boundary; do not couple the UI directly to a hosted LangGraph Cloud service.
+
+### Validation status
+- Package versions were pinned in `package.json`.
+- TypeScript and Vite alias configuration has been added.
+- A local npm install/build could not be run from the current execution environment because outbound DNS/network access to GitHub/npm is unavailable.
+- GitHub Actions workflow is configured to install dependencies, inspect the dependency tree, type-check and build. No completed workflow run or green check was visible at the time this update was recorded.
+- No lockfile has been generated/committed yet. PR #2 remains a draft and must not be merged until CI and lockfile validation are complete.
+- The assistant-ui bridge is a compile-time integration scaffold; it is not yet connected to Supabase, a real API, streaming, task cancellation or persisted conversations.
+
+### Current implementation state
+- Phase 0 foundation and the UI/runtime integration scaffold are present in PR #2.
+- Context compaction is specified in the blueprint but has not yet been implemented in application code.
+- Authentication, database schema, RLS, conversation persistence, backend streaming, durable task orchestration and provider adapters have not yet been implemented.
+
+### Next implementation steps
+1. Get PR #2's CI workflow to run and pass; resolve any dependency/type/build failures.
+2. Generate and commit `package-lock.json` from a successful install.
+3. Review the assistant-ui runtime adapter against the installed package's actual TypeScript declarations; add a small render/interaction proof.
+4. Once the foundation is verified and merged, begin the Supabase foundation: client/server boundaries, Auth integration, first migrations, RLS and automated isolation tests.
+5. Do not start production chat/provider orchestration until the persistence and security boundary is in place.
