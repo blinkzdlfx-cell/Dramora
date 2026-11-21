@@ -170,3 +170,64 @@ The next bounded implementation batch is:
 6. Keep the schema and SQL functions version-controlled so the later portable PostgreSQL export/restore path can reproduce them.
 
 Do not begin AI provider orchestration or production chat execution until authentication, persistence and RLS boundaries are established and tested. Context compaction should be implemented after conversation persistence exists, so summaries can be versioned and traced to immutable source messages.
+
+
+## 2026-11-21 — Phase 1: Supabase authentication and initial schema
+
+**Pull request:** [#4 — Phase 1: add Supabase authentication and initial data schema](https://github.com/blinkzdlfx-cell/Dramora/pull/4)
+
+### Supabase project inspection
+- Found an existing dedicated Supabase project named `dramora` in the connected Supabase account.
+- Project ref: `hiyevsafaiehlzuqcngf`.
+- Region: `eu-west-1`; PostgreSQL 17.12; project status active/healthy.
+- The public schema had no application tables and the project had no application migration history.
+- No new project was created, no data was deleted and no paid feature was enabled.
+- The project contains standard Supabase Auth and Storage system schemas. The Auth users table was empty at inspection time.
+
+### Implemented in PR #4
+- Added pinned `@supabase/supabase-js@2.119.0`.
+- Added a browser client that requires the project URL and publishable key; no secret/service-role key is exposed.
+- Configured PKCE, persisted sessions, automatic token refresh and auth URL detection.
+- Added a shared AuthProvider for session restoration, auth-state changes, password recovery and sign-out.
+- Added email/password sign-in, registration, password reset and password-update screens.
+- Connected the landing page header to the real auth state and made the pending workspace state explicit.
+- Added a CLI-generated first migration for `profiles`, `projects`, `conversations` and `messages`.
+- Added owner-scoped RLS, explicit authenticated grants, composite ownership foreign keys and append-oriented message policies.
+- Browser roles cannot write assistant/tool messages or update/delete message history.
+- Added `supabase/config.toml` with PostgreSQL 17 and `auto_expose_new_tables = false`.
+- Added Supabase CLI local-state ignore rules.
+- Added CI generation of the initial migration using the official Supabase CLI rather than inventing a timestamped filename.
+
+### Security inspection and remediation included in migration
+- Supabase Security Advisor reported one warning for the pre-existing `public.rls_auto_enable()` SECURITY DEFINER event-trigger function being executable by `anon` and `authenticated`.
+- Confirmed it is called by the database-owned `ensure_rls` DDL event trigger.
+- The migration conditionally revokes direct execution from `PUBLIC`, `anon` and `authenticated` while leaving the event trigger intact.
+- Performance Advisor returned no findings at inspection time.
+- Security Advisor must be rerun after the migration is applied to verify the warning is resolved.
+
+### CI and validation evidence
+- Initial attempt to install CLI using `v3.stable` failed because that dist-tag did not resolve to a published CLI version. Corrected to the published CLI version `3.0.0`.
+- Supabase CLI setup and project initialization passed.
+- Timestamped migration generated: `supabase/migrations/20261121114120_dramora_core_schema.sql`.
+- npm dependency install and lockfile generation passed.
+- Direct dependency-tree verification passed.
+- TypeScript type-check passed.
+- Vite production build passed.
+- Latest successful GitHub Actions validation: run **#48**, all steps passed.
+
+### Current limitations
+- PR #4 has passed CI but is still open; its migration has not yet been applied to the hosted database.
+- Authentication UI and client integration are implemented, but live authentication is not yet verified because the deployment environment has not been configured with the Dramora project URL/publishable key and the production Auth redirect allowlist has not been checked.
+- No profile, project, conversation or message rows have been created.
+- Cross-user RLS tests and post-migration advisors remain pending.
+- Project/conversation/message service wiring, streaming, durable task orchestration, provider adapters and application-code context compaction remain unimplemented.
+
+### Next steps
+1. Finish review and merge PR #4.
+2. Apply the reviewed initial migration to the existing Dramora Supabase project.
+3. Verify tables, migration history, explicit grants, RLS policies, composite foreign keys and the RLS event-trigger privilege remediation.
+4. Run transactional two-user isolation tests and confirm test rows are rolled back.
+5. Rerun Supabase Security and Performance Advisors.
+6. Retrieve the project's public URL/publishable key and configure deployment environment and Auth redirect allowlist without committing credentials.
+7. Add project/conversation/message data-access services and connect authenticated workspace flows.
+8. Implement context compaction only after persisted message history is available.
