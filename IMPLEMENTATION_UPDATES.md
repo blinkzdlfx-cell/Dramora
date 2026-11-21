@@ -105,7 +105,7 @@ assistant-ui's ExternalStoreRuntime is the current candidate because Dramora nee
 - A local npm install/build could not be run from the current execution environment because outbound DNS/network access to GitHub/npm is unavailable.
 - GitHub Actions workflow is configured to install dependencies, inspect the dependency tree, type-check and build. No completed workflow run or green check was visible at the time this update was recorded.
 - No lockfile has been generated/committed yet. PR #2 remains a draft and must not be merged until CI and lockfile validation are complete.
-- The assistant-ui bridge is a compile-time integration scaffold; it is not yet connected to Supabase, a real API, streaming, task cancellation or persisted conversations.
+- The assistant-ui bridge is compile-time verified only; it is not yet mounted as an interactive chat UI or connected to Supabase, a real API, streaming, task cancellation or persisted conversations.
 
 ### Current implementation state
 - Phase 0 foundation and the UI/runtime integration scaffold are present in PR #2.
@@ -115,7 +115,7 @@ assistant-ui's ExternalStoreRuntime is the current candidate because Dramora nee
 ### Next implementation steps
 1. Get PR #2's CI workflow to run and pass; resolve any dependency/type/build failures.
 2. Generate and commit `package-lock.json` from a successful install.
-3. Review the assistant-ui runtime adapter against the installed package's actual TypeScript declarations; add a small render/interaction proof.
+3. Add a small rendered/interactive assistant-ui smoke test using a development-only in-memory handler; keep it separate from production persistence.
 4. Once the foundation is verified and merged, begin the Supabase foundation: client/server boundaries, Auth integration, first migrations, RLS and automated isolation tests.
 5. Do not start production chat/provider orchestration until the persistence and security boundary is in place.
 
