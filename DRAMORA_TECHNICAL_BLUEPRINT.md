@@ -1303,3 +1303,151 @@ On Supabase Free, enforce the policy through application-level per-device sessio
 The next discussion is **Documents, Editors and Creative Workspace**. It must define document creation, editing, organization, versioning, autosave/persistence, editor experiences, and how creative artifacts are presented across AI Video Studio and Film Studio.
 
 No decisions from that discussion should be inferred or added as confirmed until the user has reviewed and approved them.
+
+## 28. Performance, streaming and real-time delivery architecture — confirmed direction
+
+This section records the user's approved performance architecture and the selected real-time notification transport. It supplements section 27 and must be reconciled with older infrastructure recommendations during final blueprint consolidation. The strict free-tier-only policy in section 27.8 applies to every component below.
+
+### 28.1 Separate fast conversational responses from durable background work — confirmed
+
+Dramora must use two execution paths rather than routing every interaction through a heavyweight workflow engine.
+
+**Fast conversational path**
+- Handle ordinary questions, discussion, clarification, small edits and short reviews through a lightweight request path.
+- Stream model output to the client immediately as it becomes available.
+- Avoid invoking LangGraph or multi-stage orchestration when a simple direct model request is sufficient.
+- Keep context preparation bounded and avoid unnecessary database round trips.
+
+**Durable background-work path**
+- Use durable task and stage records for substantial multi-step work, such as screenplay development, film planning, production packages, multi-document generation and substantial revisions.
+- Use LangGraph where structured multi-stage orchestration materially helps.
+- Execute bounded stages, persist outputs and checkpoints, and recover independently of the browser connection.
+- Continue to follow the Stop, Continue, Retry, checkpoint, idempotency and recovery requirements in sections 27.4–27.7.
+
+### 28.2 Streaming and time-to-first-token — confirmed
+
+- Normal AI text responses use Server-Sent Events (SSE) for incremental server-to-browser delivery.
+- The interface must show the user's message and a responding state immediately, then render generated text incrementally as tokens arrive.
+- Do not wait for the complete model response before beginning delivery.
+- Keep the interface interactive during generation; avoid rerendering the entire conversation for every token.
+- Do not reload the full conversation after each message.
+- Define persistence for interrupted or failed partial responses; never represent incomplete output as a completed answer.
+- Measure time to first token (TTFT) separately from total generation duration.
+- Provider/network latency remains an external factor; the architecture should remove avoidable internal delays but must not promise a fixed response speed.
+
+### 28.3 Bounded context retrieval and RAG performance — confirmed
+
+Use layered, relevance-based context assembly rather than retrieving the entire project on every turn:
+1. Recent conversation context.
+2. A compact project summary.
+3. Relevant established facts and structured project memory.
+4. Relevant document chunks selected through the approved hybrid RAG system.
+5. Older conversation summaries or history only when the current request requires them.
+
+Additional requirements:
+- Run independent retrieval operations in parallel where safe.
+- Cache or reuse compact summaries when appropriate, with clear invalidation when source content changes.
+- Index documents incrementally and do not re-embed unchanged content.
+- Keep database queries selective and indexed around common user, project, conversation, task and timestamp access patterns.
+- Reuse the Supabase pooler for appropriate serverless/edge database access.
+- Avoid a database write for every generated token. Persist the user message before generation and persist the completed assistant response; persist partial output when required by interruption/failure semantics.
+- Benchmark retrieval quality and latency without weakening project isolation, RLS or provenance.
+
+### 28.4 Approved real-time notification architecture — Cloudflare Durable Objects + WebSockets
+
+The user approved **Cloudflare Durable Objects using the WebSocket Hibernation API** as Dramora's primary real-time notification delivery layer, subject to free-tier integration tests and usage validation.
+
+Responsibilities are deliberately separated:
+
+- **Supabase PostgreSQL remains the system of record.** It owns authoritative project, conversation, document, task, stage, checkpoint and approval state.
+- **Cloudflare Durable Objects provide real-time connection coordination and event delivery.** They do not become a second source of truth for Dramora's application data or task lifecycle.
+- **WebSockets** deliver low-latency background-task notifications to connected clients.
+- Prefer the Durable Objects WebSocket Hibernation API for server-side WebSocket connections so idle objects can hibernate without disconnecting clients.
+- Use narrowly scoped, authenticated connections and subscriptions. A user must only receive events for resources they are authorized to access.
+- Publish meaningful state transitions and appropriately coalesced progress updates; do not emit an event for every token or tiny internal progress change.
+- Normal AI text generation continues to use SSE. Durable Objects/WebSockets are for real-time application and background-task notifications, not a replacement for the normal response-streaming path.
+- The background execution system writes durable state to Supabase first, then publishes a notification. A notification must never be treated as proof that a task state was durably committed.
+- If notification delivery fails, the task continues according to its durable backend state. The client reconnects and fetches authoritative state from Supabase.
+- If WebSockets are unavailable or the free allowance is temporarily exhausted, use bounded lightweight polling for status recovery/updates where appropriate. Do not switch to a paid service or upgrade automatically.
+
+### 28.5 Free-tier limits and technical findings — verify at implementation time
+
+Official documentation reviewed on 21 November 2026 establishes the following current published limits and behaviours. These are technical findings, not promises of capacity or performance; re-check official documentation before implementation and deployment because quotas can change.
+
+**Cloudflare Durable Objects on Workers Free**
+- SQLite-backed Durable Objects are available on the Free plan; the key-value storage backend is not available for newly created Free-plan Durable Objects.
+- Published Free allowance: 100,000 requests per day and 13,000 GB-seconds of duration per day.
+- Requests include HTTP requests, RPC sessions, WebSocket messages and alarm invocations.
+- Creating a WebSocket connection requires a request.
+- Outgoing WebSocket messages do not incur additional request charges; incoming WebSocket messages use a 20:1 ratio for compute-request billing purposes.
+- Hibernatable WebSockets can remain connected while an idle Durable Object hibernates; eligible hibernation periods do not consume active duration.
+- Cloudflare documents that a Durable Object can coordinate thousands of WebSocket clients, and the Hibernation API permits up to 32,768 WebSocket connections per object. Actual practical capacity depends on CPU, memory, message rates, workload and application design; Dramora must not assume the documented maximum is a safe target.
+- On the Free plan, exceeding a Durable Objects free limit causes further operations of that type to fail; the application must handle this gracefully and must never incur paid usage.
+
+**Supabase Realtime Free — retained as a comparison, not the selected notification transport**
+- Published Free limits include 200 concurrent connections, 2 million messages per month and 100 messages per second.
+- Database changes and broadcasts can count once per receiving subscribed client, so fan-out affects message consumption.
+- Supabase Realtime is not selected as Dramora's primary background-notification transport under this approved architecture. Supabase remains the canonical database and backend.
+
+### 28.6 Real-time delivery and resource-management safeguards — confirmed requirements
+
+Implement an internal delivery/resource-management layer that:
+- Tracks Durable Object requests, incoming WebSocket message volume, active connection counts, duration and relevant free-tier usage.
+- Tracks provider quotas separately through the central provider/quota registry in section 27.11.
+- Uses authenticated, narrowly scoped subscriptions and avoids duplicate subscriptions.
+- Coalesces high-frequency progress changes into meaningful updates.
+- Applies bounded reconnect attempts with backoff and jitter.
+- Re-fetches authoritative task state from Supabase after reconnect, refresh or suspected event loss.
+- Uses lightweight polling only as a controlled fallback, with sensible intervals and termination when no relevant task is active.
+- Handles connection loss, delivery errors, hibernation/wake-up and quota exhaustion without losing task state.
+- Applies backpressure or drops/replaces obsolete progress notifications when necessary; durable task state and completed artifacts must never be dropped.
+- Never depends on the browser remaining connected for background execution.
+- Never silently upgrades, purchases credits or routes usage to a paid fallback. When a Free allowance is exhausted, defer or use the approved fallback behaviour and clearly report the limitation.
+
+### 28.7 Performance observability and acceptance benchmarks — confirmed requirements
+
+Measure and test at least:
+- Time to first token (TTFT).
+- Total model response duration.
+- Database query and persistence duration.
+- Context assembly and RAG retrieval duration.
+- Provider response latency and quota/rate-limit failures.
+- Background task stage duration and end-to-end completion time.
+- Task failure, retry, interruption and recovery rates.
+- Durable Object connection count, request consumption, incoming message volume, duration and delivery failures.
+- Reconnection recovery time and correctness of state reconciliation.
+
+Before production acceptance, run integration/load tests that:
+1. Verify SSE delivers incremental text and Stop interrupts generation correctly.
+2. Verify WebSocket Hibernation connections remain connected through idle hibernation and wake correctly.
+3. Verify authenticated users cannot receive another user's or project's events.
+4. Verify background task state is persisted in Supabase before notification publication.
+5. Verify refresh, disconnection and reconnection recover the correct task state from Supabase.
+6. Verify notification coalescing, bounded reconnect behaviour and polling fallback.
+7. Simulate Durable Objects Free quota exhaustion and confirm graceful failure/defer behaviour without paid usage.
+8. Measure realistic concurrent connections, event fan-out and resource consumption; do not infer production capacity solely from Cloudflare's per-object maximum.
+9. Verify normal conversational requests use the fast path and substantial workflows use durable background execution.
+10. Verify performance optimizations do not bypass RLS, project isolation, approval rules, checkpoints or idempotency.
+
+No numerical latency or scale target is approved yet. Set measurable targets after representative baseline tests rather than inventing guarantees.
+
+### 28.8 Approved responsibility map
+
+| Responsibility | Selected technology |
+|---|---|
+| Main application backend and system of record | Supabase |
+| Relational data and durable task state | Supabase PostgreSQL |
+| Authentication and authorization | Supabase Auth + RLS and approved application session enforcement |
+| File storage | Supabase Storage |
+| RAG | PostgreSQL + pgvector + full-text search |
+| Normal AI response streaming | SSE |
+| Background task execution and orchestration | Durable Supabase-backed jobs; LangGraph where appropriate |
+| Background task real-time notifications | Cloudflare Durable Objects + WebSockets (Hibernation API) |
+| Task recovery and authoritative status | Supabase PostgreSQL |
+| Real-time fallback | Bounded lightweight polling |
+| AI inference and embeddings | Approved free-tier providers under section 27.11 |
+
+### 28.9 Planning sequence
+
+The next product-design discussion remains **Documents, Editors and Creative Workspace**, as recorded in section 27.14. This performance and real-time architecture selection does not authorize implementation. Implementation remains blocked until the user reviews and explicitly approves the final consolidated blueprint.
+
