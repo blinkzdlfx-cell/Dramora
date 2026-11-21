@@ -291,3 +291,47 @@ A transactional two-user RLS test passed:
 4. Keep assistant-ui connected only after conversation persistence and server-side message creation contracts are ready.
 5. Configure deployment environment values and Auth redirect allowlist; do not commit the publishable key or any secret to Git.
 6. Add application-level tests for project and conversation CRUD under authenticated sessions.
+
+
+## 2026-11-21 — Phase 2: authenticated project and conversation workspace
+
+**Pull request:** [#6 — Phase 2: add authenticated project and conversation workspace](https://github.com/blinkzdlfx-cell/Dramora/pull/6)
+
+### Implemented
+- Generated TypeScript database types from the live Dramora Supabase schema and committed them under `src/lib/supabase/database.types.ts`.
+- Updated the shared Supabase client to use the generated `Database` type.
+- Added typed project and conversation data-access functions:
+  - list active projects for the signed-in owner
+  - create a project with a user-defined title and selected studio
+  - list active conversations within a project
+  - create a conversation under the selected project
+- Added the authenticated project dashboard.
+- Added project creation flow for the two approved studios: AI Video Studio and Film Studio.
+- Added project detail navigation and conversation list/create flow.
+- Added loading, empty and error states.
+- Authenticated users now land on their project dashboard rather than the public marketing entry screen.
+
+### Behavior boundaries
+- Project and conversation reads/writes use the browser Supabase client and the database's RLS policies.
+- Client-side owner filters are for query scoping only; RLS remains the security boundary.
+- Project deletion/archive and conversation deletion are not exposed in this batch.
+- A conversation record is persisted and displayed, but the chat composer, message streaming and assistant execution are not yet wired. The UI states this explicitly.
+- No assistant messages are inserted from the browser.
+
+### Validation
+- GitHub Actions run **#63** passed:
+  - Supabase CLI setup and migration checks.
+  - npm dependency install and lockfile verification.
+  - TypeScript type-check.
+  - Vite production build.
+- The generated database types match the currently applied Supabase schema.
+- Live browser CRUD testing remains pending until the deployed app has the project URL/publishable key configured and an allowed Auth redirect URL.
+
+### Next steps
+1. Merge the verified Phase 2 PR.
+2. Configure the deployment environment with the Dramora Supabase project URL and publishable key; keep credentials out of Git.
+3. Verify Auth registration/sign-in/password recovery against the actual deployed origin and configure the Supabase redirect allowlist.
+4. Verify project and conversation creation/listing in a real signed-in browser session.
+5. Implement the persisted chat composer and message service, including idempotency and status handling.
+6. Define the server-side assistant orchestration/streaming contract before connecting assistant-ui to real model calls.
+7. Implement context compaction after persisted message history and summaries have a stable contract.
