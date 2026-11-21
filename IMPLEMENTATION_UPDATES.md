@@ -350,3 +350,71 @@ The next backend batch will add versioned database records for:
 - Project-context summaries and source-conversation provenance.
 
 The browser will be able to read only its own task/summary records. Task execution state and summary creation/updates remain server-owned. The next migration must preserve strict least-privilege defaults and be verified with two-user RLS tests and Supabase Advisors before chat orchestration uses it.
+
+
+## 2026-11-21 — Phase 3: durable task and context-summary storage
+
+**Pull request:** [#7 — Phase 3: add durable task and context compaction storage](https://github.com/blinkzdlfx-cell/Dramora/pull/7)  
+**Merge commit:** `ce4fe9270add098854816b8003ca6b40e7a8577b`
+
+### Implemented and applied to the hosted Dramora database
+- `tasks`: durable server-owned task state, checkpoints, retry counters, approval state, stop requests and result/error fields.
+- `task_events`: append-only task event history with ordered per-task sequence numbers.
+- `task_control_requests`: owner-scoped stop/continue/retry/approve/reject requests.
+- `conversation_summaries`: versioned structured conversation summaries and covered-message metadata.
+- `conversation_summary_sources`: exact source-message IDs and ordering for every conversation summary.
+- `project_context_summaries`: versioned project-level context summaries, distinct from canonical Project Bible records.
+- `project_context_summary_sources`: source-conversation provenance for each project summary version.
+- Composite foreign keys bind tasks, summaries and provenance to the correct owner/project/conversation/message.
+- One current summary per conversation/project is enforced by partial unique indexes; superseded versions remain stored.
+
+### Security model
+- All new tables have RLS enabled.
+- Browser users can read only their own tasks, events and summary records.
+- Task state, task events and summary creation/versioning are server-owned.
+- Browser users can submit only scoped task-control requests.
+- Task-control INSERT is column-scoped; clients cannot set IDs, creation/processing timestamps or server outcomes.
+- Browser users cannot create/update/delete task state, event history or summaries.
+- The database's existing strict default privileges remain in effect.
+
+### Performance follow-up
+**Pull request:** [#8 — Performance: index context summary provenance foreign keys](https://github.com/blinkzdlfx-cell/Dramora/pull/8)  
+**Merge commit:** `0247fb2a62cdc8bffe38f272f04917d0be4c76fd`
+
+- Performance Advisor identified two missing covering indexes for composite provenance foreign keys.
+- Added the exact source-summary scope indexes and applied the migration.
+- Latest Performance Advisor has no unindexed foreign-key findings. It reports unused indexes because the database is still empty; retain these planned indexes until real workload evidence supports removal.
+
+### Hosted migration history
+- `20261121115154_durable_tasks_and_context_summaries`
+- `20261121115325_index_summary_source_foreign_keys`
+
+### Validation evidence
+- GitHub Actions run #67 passed the durable-task/summary migration generation, dependency install, type-check and production build.
+- GitHub Actions run #70 passed the summary-source index migration generation, dependency install, type-check and production build.
+- Transactional two-user tests passed:
+  - User B could read only B's tasks, task events, control requests, conversation summaries, source rows and project summaries.
+  - User B could not see User A's task.
+  - User B could submit a stop request for B's task.
+  - User B could not submit a control request for A's task.
+  - Browser role could not insert tasks, change task state, insert task events, update control requests, or set server-owned processed timestamps.
+  - Anonymous role could not read tasks.
+- All synthetic test users, projects, conversations, messages, tasks, summaries and control requests were rolled back. A follow-up count confirmed zero retained auth users or application rows.
+- Security Advisor: **zero findings**.
+- Performance Advisor: **zero unindexed foreign-key findings**; only expected unused-index notices on the empty database.
+
+### Current status
+- Phase 0 frontend/tooling foundation merged and verified.
+- Phase 1 Supabase Auth client/UI and core schema merged.
+- Phase 2 authenticated project/conversation workspace merged.
+- Core ownership/RLS schema, least-privilege grants, durable task records and context-summary provenance tables are applied and verified remotely.
+- Authentication is not yet live-verified from the deployed app because environment variables and Auth redirect allowlist still need configuration.
+- No task worker, AI execution, message streaming or actual context-compaction algorithm has been implemented yet. This phase provides the durable storage/security foundation for those systems.
+
+### Next implementation phase
+1. Add authenticated message loading and user-message persistence.
+2. Define the server-side chat request contract and task creation flow.
+3. Implement a durable worker/orchestrator that validates ownership, creates assistant/tool messages, checkpoints progress and processes task-control requests.
+4. Implement token-budget estimation and context-compaction summary generation with source validation/versioning.
+5. Connect assistant-ui to the persisted message/task lifecycle only after the server event/stream protocol is defined.
+6. Configure the deployment's Supabase URL/publishable key and Auth redirect allowlist, then verify real sign-in and project/conversation CRUD.
