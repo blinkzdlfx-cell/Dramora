@@ -1,0 +1,52 @@
+name: Dramora foundation checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "phase-0/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install pinned dependencies and generate lockfile
+        run: npm install --no-audit --no-fund
+      - name: Verify installed dependency tree
+        run: npm ls --depth=0
+      - name: Type-check
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Commit reproducible lockfile
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "npm did not produce package-lock.json."
+            exit 1
+          fi
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "package-lock.json is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: add reproducible npm lockfile [skip ci]"
+          git push origin "HEAD:${GH_HEAD_REF}"
