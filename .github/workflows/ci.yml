@@ -41,6 +41,10 @@ jobs:
             supabase migration new harden_public_default_privileges
             node scripts/write-grants-hardening-migration.mjs
           fi
+          if ! compgen -G "supabase/migrations/*_durable_tasks_and_context_summaries.sql" > /dev/null; then
+            supabase migration new durable_tasks_and_context_summaries
+            node scripts/write-durable-task-migration.mjs
+          fi
       - name: Install pinned dependencies and generate lockfile
         run: npm install --no-audit --no-fund
       - name: Verify installed dependency tree
