@@ -45,6 +45,10 @@ jobs:
             supabase migration new durable_tasks_and_context_summaries
             node scripts/write-durable-task-migration.mjs
           fi
+          if ! compgen -G "supabase/migrations/*_index_summary_source_foreign_keys.sql" > /dev/null; then
+            supabase migration new index_summary_source_foreign_keys
+            node scripts/write-summary-index-migration.mjs
+          fi
       - name: Install pinned dependencies and generate lockfile
         run: npm install --no-audit --no-fund
       - name: Verify installed dependency tree
