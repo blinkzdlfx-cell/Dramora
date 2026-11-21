@@ -2716,3 +2716,33 @@ Supabase projects may have broad default ACLs for objects created by `postgres`.
 - Regrant only the operations listed for each table.
 - After every schema migration, verify effective privileges with `has_table_privilege` and inspect default ACLs, not only RLS policies.
 - Verify RLS isolation with at least two distinct authenticated identities and ensure tests roll back all synthetic data.
+
+
+## 32.16 Durable task and context-summary persistence
+
+The first durable task/context-summary migrations implement these records:
+
+### Durable tasks
+- `tasks` stores owner/project/conversation scope, task type, lifecycle status, autonomy mode, input, checkpoint, result/error, retry limits/counters, approval requirement, stop request and lifecycle timestamps.
+- A task is always project-scoped; an optional conversation reference must belong to that same project and owner.
+- Task state is server-owned. Authenticated browser clients can read their own tasks but cannot create, update, delete or truncate task records.
+- `task_events` is append-only server-owned history with per-task sequence numbers and JSON payloads. Users can read only their own task events.
+- `task_control_requests` accepts owner-scoped stop, continue, retry, approve and reject requests. Users can read/insert requests, but cannot change their processing status/outcome or mutate task state. Server orchestration validates whether each action is currently valid and processes requests idempotently.
+- Task execution state must not depend on an open browser tab.
+
+### Versioned context summaries
+- `conversation_summaries` stores versioned structured summary content, readable summary text, covered message count, token estimate, covered-through message ID and current/superseded status.
+- `conversation_summary_sources` records exact source message IDs and their order for each summary version.
+- `project_context_summaries` stores versioned project-level context, distinct from canonical Project Bible records.
+- `project_context_summary_sources` records the source conversations for each project summary version.
+- Only one version may be marked current for a given conversation/project; previous versions remain available as historical records.
+- Original messages and canonical project records remain authoritative. Summary records are derived context and must retain source provenance.
+- Authenticated users may read their own summaries/provenance but cannot create, edit or delete summary records. Trusted server-side compaction logic owns summary generation and version transitions.
+
+### Access-control and recovery requirements
+- RLS is enabled on every task, event, control-request and summary/provenance table.
+- Effective grants must be inspected separately from RLS policies. Default ACLs can grant privileges such as `TRUNCATE` that RLS does not restrict.
+- Task control requests are insert-only from the browser and column-scoped so clients cannot forge server-owned timestamps or outcomes.
+- Composite foreign keys bind every task, summary and provenance row to the same owner/project/conversation/message scope.
+- Task/summary creation and updates must use idempotency keys or version checks where retries could duplicate state.
+- Compaction must preserve the original transcript; superseding a summary never deletes its source messages.
