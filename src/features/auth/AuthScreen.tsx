@@ -7,6 +7,7 @@ import { useAuth } from "./AuthProvider";
 type AuthMode = "sign-in" | "sign-up" | "reset" | "update-password";
 
 type AuthScreenProps = {
+  initialMode: "sign-in" | "sign-up";
   onBack: () => void;
 };
 
@@ -45,10 +46,10 @@ function PasswordVisibilityButton({
   );
 }
 
-export function AuthScreen({ onBack }: AuthScreenProps) {
+export function AuthScreen({ initialMode, onBack }: AuthScreenProps) {
   const { configured, isPasswordRecovery } = useAuth();
   const [mode, setMode] = useState<AuthMode>(
-    isPasswordRecovery ? "update-password" : "sign-in",
+    isPasswordRecovery ? "update-password" : initialMode,
   );
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
