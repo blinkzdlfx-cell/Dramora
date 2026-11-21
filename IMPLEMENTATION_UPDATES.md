@@ -118,3 +118,55 @@ assistant-ui's ExternalStoreRuntime is the current candidate because Dramora nee
 3. Review the assistant-ui runtime adapter against the installed package's actual TypeScript declarations; add a small render/interaction proof.
 4. Once the foundation is verified and merged, begin the Supabase foundation: client/server boundaries, Auth integration, first migrations, RLS and automated isolation tests.
 5. Do not start production chat/provider orchestration until the persistence and security boundary is in place.
+
+
+## 2026-11-21 — Phase 0 verified and merged
+
+**Pull request:** [#2 — Phase 0: establish Dramora React and Vite foundation](https://github.com/blinkzdlfx-cell/Dramora/pull/2)  
+**Merge commit:** `1f77ace6c7c4c52851ce6295b37381925154c621`
+
+### Completed
+- Added the React 19, Vite 8 and TypeScript application foundation.
+- Configured Tailwind CSS v4 through the Vite plugin.
+- Added Vite client/CSS type declarations and matching `@/*` aliases for Vite and both TypeScript configuration layers.
+- Added shadcn/ui-compatible project configuration and reusable Button/Card primitives.
+- Added the shared `cn()` helper using `clsx` and `tailwind-merge`.
+- Added `@assistant-ui/react` and a typed Dramora `ExternalStoreRuntime` bridge.
+- Kept conversation state and send handling owned by Dramora's application layer; assistant-ui is not the canonical persistence layer.
+- Generated and committed `package-lock.json` from the CI runner.
+- Removed the temporary README so the repository retains only the two approved project documents.
+
+### Validation evidence
+GitHub Actions run **#33** completed successfully:
+- Dependency installation: passed.
+- Direct dependency tree verification: passed.
+- TypeScript type-check: passed.
+- Vite production build: passed.
+- Lockfile generation and commit: passed.
+
+The first type-check run exposed a missing Vite CSS module declaration. Added `src/vite-env.d.ts`; the subsequent validation run passed.
+
+### Explicitly not implemented yet
+- No Supabase project connection or credentials.
+- No authentication or account flows.
+- No database migrations, RLS policies or security tests.
+- No persisted project/conversation/message backend.
+- No real streaming API, durable task engine or LangGraph orchestration.
+- No model-provider adapters or AI calls.
+- No application-code context compaction. The context compaction design is documented in the blueprint and awaits its implementation phase.
+
+### Current status
+**Phase 0 is merged and its install/type-check/build pipeline is green.** This verifies the frontend/tooling foundation, not the complete application or the assistant-ui streaming/persistence integration.
+
+## Next implementation phase — Supabase foundation
+
+The next bounded implementation batch is:
+
+1. Inspect the current Supabase project state and confirm whether a fresh project already exists. Do not create a project or enable a paid feature without approval.
+2. Establish the browser/server client boundary using only the publishable key in browser code and server-side secrets for privileged operations.
+3. Define the first versioned SQL migrations for profiles/account metadata, projects, conversations and messages.
+4. Add RLS policies and automated tests proving users cannot read or mutate another user's data.
+5. Add a minimal Auth flow and verify session handling, sign-out and protected routes.
+6. Keep the schema and SQL functions version-controlled so the later portable PostgreSQL export/restore path can reproduce them.
+
+Do not begin AI provider orchestration or production chat execution until authentication, persistence and RLS boundaries are established and tested. Context compaction should be implemented after conversation persistence exists, so summaries can be versioned and traced to immutable source messages.
