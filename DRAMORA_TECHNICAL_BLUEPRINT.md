@@ -1,7 +1,7 @@
 # DRAMORA — Technical Blueprint
 
 **Status:** Approved consolidated architecture; implementation in progress (November 21, 2026)  
-**Purpose:** Architecture and implementation plan for review before coding  
+**Purpose:** Authoritative product and technical specification for implementation  
 **Repository:** `blinkzdlfx-cell/dramora`
 
 ---
