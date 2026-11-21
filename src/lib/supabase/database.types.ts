@@ -14,6 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
+      conversation_summaries: {
+        Row: {
+          conversation_id: string
+          covered_message_count: number
+          covered_through_message_id: string
+          created_at: string
+          id: string
+          owner_id: string
+          status: string
+          summary_content: Json
+          summary_text: string
+          token_estimate: number | null
+          version: number
+        }
+        Insert: {
+          conversation_id: string
+          covered_message_count: number
+          covered_through_message_id: string
+          created_at?: string
+          id?: string
+          owner_id: string
+          status?: string
+          summary_content: Json
+          summary_text: string
+          token_estimate?: number | null
+          version: number
+        }
+        Update: {
+          conversation_id?: string
+          covered_message_count?: number
+          covered_through_message_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          status?: string
+          summary_content?: Json
+          summary_text?: string
+          token_estimate?: number | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_summaries_conversation_owner_fkey"
+            columns: ["conversation_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "conversation_summaries_covered_message_fkey"
+            columns: [
+              "covered_through_message_id",
+              "conversation_id",
+              "owner_id",
+            ]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id", "conversation_id", "owner_id"]
+          },
+        ]
+      }
+      conversation_summary_sources: {
+        Row: {
+          conversation_id: string
+          message_id: string
+          owner_id: string
+          source_order: number
+          summary_id: string
+        }
+        Insert: {
+          conversation_id: string
+          message_id: string
+          owner_id: string
+          source_order: number
+          summary_id: string
+        }
+        Update: {
+          conversation_id?: string
+          message_id?: string
+          owner_id?: string
+          source_order?: number
+          summary_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_summary_sources_message_fkey"
+            columns: ["message_id", "conversation_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id", "conversation_id", "owner_id"]
+          },
+          {
+            foreignKeyName: "conversation_summary_sources_summary_fkey"
+            columns: ["summary_id", "conversation_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summaries"
+            referencedColumns: ["id", "conversation_id", "owner_id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -123,6 +223,92 @@ export type Database = {
         }
         Relationships: []
       }
+      project_context_summaries: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          project_id: string
+          source_conversation_count: number
+          status: string
+          summary_content: Json
+          summary_text: string
+          token_estimate: number | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          project_id: string
+          source_conversation_count?: number
+          status?: string
+          summary_content: Json
+          summary_text: string
+          token_estimate?: number | null
+          version: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          project_id?: string
+          source_conversation_count?: number
+          status?: string
+          summary_content?: Json
+          summary_text?: string
+          token_estimate?: number | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_context_summaries_project_owner_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      project_context_summary_sources: {
+        Row: {
+          conversation_id: string
+          owner_id: string
+          project_id: string
+          source_order: number
+          summary_id: string
+        }
+        Insert: {
+          conversation_id: string
+          owner_id: string
+          project_id: string
+          source_order: number
+          summary_id: string
+        }
+        Update: {
+          conversation_id?: string
+          owner_id?: string
+          project_id?: string
+          source_order?: number
+          summary_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_context_summary_sources_conversation_fkey"
+            columns: ["conversation_id", "owner_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id", "owner_id", "project_id"]
+          },
+          {
+            foreignKeyName: "project_context_summary_sources_summary_fkey"
+            columns: ["summary_id", "project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "project_context_summaries"
+            referencedColumns: ["id", "project_id", "owner_id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           archived_at: string | null
@@ -155,6 +341,172 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      task_control_requests: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          outcome: Json | null
+          owner_id: string
+          payload: Json
+          processed_at: string | null
+          task_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          outcome?: Json | null
+          owner_id: string
+          payload?: Json
+          processed_at?: string | null
+          task_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          outcome?: Json | null
+          owner_id?: string
+          payload?: Json
+          processed_at?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_control_task_owner_fkey"
+            columns: ["task_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      task_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          owner_id: string
+          payload: Json
+          sequence_number: number
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          owner_id: string
+          payload?: Json
+          sequence_number: number
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          owner_id?: string
+          payload?: Json
+          sequence_number?: number
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_events_task_owner_fkey"
+            columns: ["task_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          approval_required: boolean
+          checkpoint: Json
+          completed_at: string | null
+          conversation_id: string | null
+          created_at: string
+          error: Json | null
+          id: string
+          idempotency_key: string | null
+          input: Json
+          max_retries: number
+          mode: string
+          owner_id: string
+          project_id: string
+          result: Json | null
+          retry_count: number
+          started_at: string | null
+          status: string
+          stop_requested_at: string | null
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          approval_required?: boolean
+          checkpoint?: Json
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: Json | null
+          id?: string
+          idempotency_key?: string | null
+          input?: Json
+          max_retries?: number
+          mode?: string
+          owner_id: string
+          project_id: string
+          result?: Json | null
+          retry_count?: number
+          started_at?: string | null
+          status?: string
+          stop_requested_at?: string | null
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          approval_required?: boolean
+          checkpoint?: Json
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: Json | null
+          id?: string
+          idempotency_key?: string | null
+          input?: Json
+          max_retries?: number
+          mode?: string
+          owner_id?: string
+          project_id?: string
+          result?: Json | null
+          retry_count?: number
+          started_at?: string | null
+          status?: string
+          stop_requested_at?: string | null
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_conversation_project_owner_fkey"
+            columns: ["conversation_id", "owner_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id", "owner_id", "project_id"]
+          },
+          {
+            foreignKeyName: "tasks_project_owner_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
       }
     }
     Views: {
