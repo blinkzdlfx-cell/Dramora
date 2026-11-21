@@ -418,3 +418,19 @@ The browser will be able to read only its own task/summary records. Task executi
 4. Implement token-budget estimation and context-compaction summary generation with source validation/versioning.
 5. Connect assistant-ui to the persisted message/task lifecycle only after the server event/stream protocol is defined.
 6. Configure the deployment's Supabase URL/publishable key and Auth redirect allowlist, then verify real sign-in and project/conversation CRUD.
+
+
+### Phase 3 verification and generated type refresh
+- PR #8 merged into `main`; merge commit: `0247fb2a62cdc8bffe38f272f04917d0be4c76fd`.
+- Applied migration `20261121115325_index_summary_source_foreign_keys` to the hosted Dramora database.
+- Performance Advisor now reports no unindexed foreign-key findings. Remaining notices are unused indexes on an empty database.
+- Transactional two-user tests verified owner isolation for tasks, task events, control requests, conversation summaries, summary sources, project-context summaries and source conversations.
+- Tests verified task state and event history are not writable by browser roles, task-control requests are owner-scoped, and server-owned processing columns cannot be inserted by clients.
+- All synthetic data was rolled back; a follow-up count confirmed zero users or application rows remain.
+- Security Advisor remains at zero findings.
+
+**Generated types PR:** [#9 — refresh generated Supabase database types](https://github.com/blinkzdlfx-cell/Dramora/pull/9)  
+**Merge commit:** `c81020121ade6c9c3719736c3e77188f1736a608`
+
+- Regenerated `src/lib/supabase/database.types.ts` from the live schema, including tasks, task events, task-control requests and summary/provenance tables.
+- GitHub Actions run #75 passed Supabase CLI setup, dependency installation, dependency verification, TypeScript type-check and production build.
