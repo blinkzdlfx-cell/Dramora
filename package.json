@@ -18,7 +18,8 @@
     "@assistant-ui/react": "0.15.37",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "tailwind-merge": "3.7.1"
+    "tailwind-merge": "3.7.1",
+    "@supabase/supabase-js": "2.119.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.5",
