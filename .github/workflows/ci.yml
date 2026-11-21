@@ -21,6 +21,8 @@ jobs:
           node-version: 24
       - name: Install pinned dependencies
         run: npm install --no-audit --no-fund
+      - name: Verify installed dependency tree
+        run: npm ls --depth=0
       - name: Type-check
         run: npm run typecheck
       - name: Build
