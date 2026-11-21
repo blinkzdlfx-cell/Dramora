@@ -11,7 +11,39 @@ type AuthScreenProps = {
 };
 
 const inputClassName =
-  "mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/15";
+  "mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/30 px-3 pr-12 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/15";
+
+function PasswordVisibilityButton({
+  visible,
+  onToggle,
+  label,
+}: {
+  visible: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      aria-label={visible ? `Hide ${label}` : `Show ${label}`}
+      aria-pressed={visible}
+      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+      onClick={onToggle}
+      type="button"
+    >
+      {visible ? (
+        <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.6 10.7a2 2 0 002.7 2.7" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.9 5.2A10.8 10.8 0 0112 5c5.2 0 8.8 4.8 9.5 7-.3 1-1.2 2.3-2.5 3.5M6.2 6.3C3.9 7.8 2.7 10 2.5 12c.4 1.2 3.8 7 9.5 7 1.2 0 2.3-.2 3.3-.7" />
+        </svg>
+      ) : (
+        <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.4-7 9.5-7 9.5 7 9.5 7-3.4 7-9.5 7-9.5-7-9.5-7z" />
+          <circle cx="12" cy="12" r="2.5" />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 export function AuthScreen({ onBack }: AuthScreenProps) {
   const { configured, isPasswordRecovery } = useAuth();
@@ -22,6 +54,8 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -36,6 +70,8 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
     setSuccessMessage("");
     setPassword("");
     setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -46,7 +82,7 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
     const supabase = getSupabaseClient();
     if (!supabase) {
       setErrorMessage(
-        "Authentication is not configured yet. Add the Dramora Supabase URL and publishable key to the local environment.",
+        "Authentication is not configured. Confirm the Supabase project URL and publishable key are present in the production build environment, then redeploy.",
       );
       return;
     }
@@ -113,11 +149,22 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
         setMode("sign-in");
       }
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "The authentication request could not be completed.",
-      );
+      console.error("[Dramora auth] Authentication request failed:", error);
+
+      if (
+        error instanceof TypeError &&
+        /failed to fetch|networkerror|load failed/i.test(error.message)
+      ) {
+        setErrorMessage(
+          "Dramora could not reach Supabase Auth. This is a network-level connection failure, not a password error. Check that the production build uses the exact Supabase project URL and publishable key, then try again on another network or browser. If it continues, the browser's Network/Console error will identify whether the request is blocked or the endpoint is unreachable.",
+        );
+      } else {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "The authentication request could not be completed.",
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -223,34 +270,50 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
             {isPasswordMode && (
               <label className="block text-sm text-zinc-300">
                 {mode === "update-password" ? "New password" : "Password"}
-                <input
-                  autoComplete={
-                    mode === "sign-in"
-                      ? "current-password"
-                      : "new-password"
-                  }
-                  className={inputClassName}
-                  minLength={8}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  type="password"
-                  value={password}
-                />
+                <div className="relative">
+                  <input
+                    autoComplete={
+                      mode === "sign-in"
+                        ? "current-password"
+                        : "new-password"
+                    }
+                    className={inputClassName}
+                    minLength={8}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                  />
+                  <PasswordVisibilityButton
+                    label="password"
+                    onToggle={() => setShowPassword((visible) => !visible)}
+                    visible={showPassword}
+                  />
+                </div>
               </label>
             )}
 
             {mode === "update-password" && (
               <label className="block text-sm text-zinc-300">
                 Confirm new password
-                <input
-                  autoComplete="new-password"
-                  className={inputClassName}
-                  minLength={8}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  required
-                  type="password"
-                  value={confirmPassword}
-                />
+                <div className="relative">
+                  <input
+                    autoComplete="new-password"
+                    className={inputClassName}
+                    minLength={8}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    required
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                  />
+                  <PasswordVisibilityButton
+                    label="confirmation password"
+                    onToggle={() =>
+                      setShowConfirmPassword((visible) => !visible)
+                    }
+                    visible={showConfirmPassword}
+                  />
+                </div>
               </label>
             )}
 

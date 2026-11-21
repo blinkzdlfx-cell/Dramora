@@ -57,6 +57,21 @@ function StudioCard({
   );
 }
 
+function SessionShimmer() {
+  return (
+    <div
+      aria-label="Loading account session"
+      aria-busy="true"
+      className="flex h-9 w-28 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.035] px-3"
+      role="status"
+    >
+      <span className="size-2 rounded-full bg-white/15" />
+      <span className="h-2 w-16 rounded-full bg-gradient-to-r from-white/[0.06] via-white/[0.18] to-white/[0.06] animate-pulse" />
+      <span className="sr-only">Loading account</span>
+    </div>
+  );
+}
+
 function AppHeader({
   email,
   loading,
@@ -86,7 +101,7 @@ function AppHeader({
       </a>
       <div className="flex items-center gap-2 sm:gap-3">
         {loading ? (
-          <span className="text-xs text-zinc-500">Checking session...</span>
+          <SessionShimmer />
         ) : email ? (
           <>
             <span className="hidden max-w-48 truncate text-xs text-zinc-400 sm:inline">
@@ -141,7 +156,29 @@ function App() {
         onSignOut={handleSignOut}
       />
 
-      {user ? (
+      {loading ? (
+        <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-16 sm:px-8 sm:pt-24" aria-busy="true">
+          <div className="max-w-3xl animate-pulse space-y-5">
+            <div className="h-3 w-40 rounded-full bg-white/[0.08]" />
+            <div className="h-12 w-4/5 rounded-xl bg-white/[0.08] sm:h-16" />
+            <div className="h-5 w-3/5 rounded-full bg-white/[0.06]" />
+            <div className="h-5 w-2/5 rounded-full bg-white/[0.06]" />
+            <div className="mt-8 h-12 w-44 rounded-lg bg-white/[0.08]" />
+          </div>
+          <div className="mt-16 grid gap-4 md:grid-cols-2">
+            {[0, 1].map((item) => (
+              <div key={item} className="min-h-72 animate-pulse rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
+                <div className="h-6 w-32 rounded-full bg-white/[0.08]" />
+                <div className="mt-10 h-7 w-3/4 rounded-lg bg-white/[0.08]" />
+                <div className="mt-5 h-3 w-full rounded-full bg-white/[0.06]" />
+                <div className="mt-3 h-3 w-4/5 rounded-full bg-white/[0.06]" />
+                <div className="mt-12 h-3 w-2/3 rounded-full bg-white/[0.06]" />
+              </div>
+            ))}
+          </div>
+          <span className="sr-only">Loading Dramora workspace</span>
+        </main>
+      ) : user ? (
         <>
           {accountError && (
             <div className="mx-auto mt-6 max-w-6xl px-5 sm:px-8">
