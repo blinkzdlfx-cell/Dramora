@@ -132,7 +132,12 @@ function App() {
   const [accountError, setAccountError] = useState("");
 
   if (authMode) {
-    return <AuthScreen onBack={() => setAuthMode(null)} />;
+    return (
+      <AuthScreen
+        initialMode={authMode}
+        onBack={() => setAuthMode(null)}
+      />
+    );
   }
 
   function handleSignOut() {
