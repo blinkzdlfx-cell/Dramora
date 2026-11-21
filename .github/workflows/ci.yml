@@ -27,7 +27,7 @@ jobs:
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v3
         with:
-          version: v3.stable
+          version: 3.0.0
       - name: Generate initial schema migration with Supabase CLI
         run: |
           if [ ! -f supabase/config.toml ]; then
