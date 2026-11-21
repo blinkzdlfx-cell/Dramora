@@ -231,3 +231,63 @@ Do not begin AI provider orchestration or production chat execution until authen
 6. Retrieve the project's public URL/publishable key and configure deployment environment and Auth redirect allowlist without committing credentials.
 7. Add project/conversation/message data-access services and connect authenticated workspace flows.
 8. Implement context compaction only after persisted message history is available.
+
+
+## 2026-11-21 — Database grant hardening and remote verification
+
+**Pull request:** [#5 — Security hardening: remove inherited public-schema grants](https://github.com/blinkzdlfx-cell/Dramora/pull/5)  
+**Merge commit:** `675de51e0fb77c4c65fa7342517af0983791ed9b`
+
+### Why the follow-up migration was required
+- After the initial schema migration, inspection of `information_schema.role_table_grants` showed that the Supabase project's inherited default ACLs still gave `authenticated` broad table privileges, including `TRUNCATE`, `REFERENCES` and `TRIGGER`.
+- RLS does not protect against `TRUNCATE`; relying on RLS alone would have left a dangerous privilege path.
+- This was caught before any real Dramora user/project data was created.
+- The original migration was corrected for clean rebuilds, and a second migration was added for the already-initialised hosted project.
+
+### Corrective changes
+- Revoked all table privileges from `PUBLIC`, `anon` and `authenticated` before applying explicit least-privilege grants.
+- Tightened default privileges for future `postgres`-created public tables, sequences and functions.
+- Added indexes for composite ownership foreign keys and the messages owner foreign key.
+- Kept `service_role` and `postgres` privileges intact for trusted administration/server-side operations.
+- Applied the follow-up migration to the existing Dramora project.
+
+### Remote database verification
+Both migrations are recorded in Supabase migration history:
+- `20261121114120_dramora_core_schema`
+- `20261121114606_harden_public_default_privileges`
+
+Effective application-table grants now match the intended allowlist:
+- `profiles`: authenticated SELECT, INSERT, UPDATE only.
+- `projects`: authenticated SELECT, INSERT, UPDATE, DELETE only.
+- `conversations`: authenticated SELECT, INSERT, UPDATE, DELETE only.
+- `messages`: authenticated SELECT, INSERT only.
+- No application-table privileges for `anon`.
+- Future public-schema tables, sequences and functions created by `postgres` no longer receive automatic privileges for `PUBLIC`, `anon` or `authenticated`.
+
+A transactional two-user RLS test passed:
+- User B could see their own project/conversation but could not see User A's project or message.
+- Cross-owner project/conversation relationship was rejected by the composite foreign key.
+- Browser-authenticated insertion of an assistant-role message was rejected by RLS.
+- `authenticated` lacked TRUNCATE, UPDATE and DELETE privileges on messages.
+- `anon` lacked SELECT privilege on projects.
+- Synthetic users and test rows were rolled back; no test data was retained.
+
+### Advisor results
+- Security Advisor: **zero findings** after the corrective migration.
+- Performance Advisor: no unindexed foreign-key findings remained. It reports unused indexes because the project is still empty; retain the planned indexes until real query patterns are available, then reassess with workload evidence.
+
+### Current status
+- Phase 0 frontend foundation is merged and verified.
+- Phase 1 authentication client/UI and initial database schema are merged.
+- Both database migrations are applied and remotely verified.
+- RLS isolation and least-privilege grants have passed transactional tests.
+- Live email/password authentication has not yet been tested from the deployed browser because the app's deployment environment variables and Supabase Auth redirect allowlist still need configuration.
+- Project/conversation UI, persistence service integration, message chat flow, AI orchestration and application-code context compaction remain pending.
+
+### Next implementation phase
+1. Build the authenticated project dashboard for the two studios.
+2. Add project creation/listing and conversation creation/listing services using the RLS-protected Supabase client.
+3. Add project/conversation workspace navigation and explicit empty/loading/error states.
+4. Keep assistant-ui connected only after conversation persistence and server-side message creation contracts are ready.
+5. Configure deployment environment values and Auth redirect allowlist; do not commit the publishable key or any secret to Git.
+6. Add application-level tests for project and conversation CRUD under authenticated sessions.
