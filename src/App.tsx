@@ -1,3 +1,11 @@
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+
 type StudioCardProps = {
   eyebrow: string;
   title: string;
@@ -19,9 +27,9 @@ function StudioCard({
       : "border-amber-300/20 bg-amber-300/[0.06] text-amber-100";
 
   return (
-    <article className="group flex min-h-72 flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.035] p-6 transition duration-200 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.055]">
-      <div>
-        <div className={`mb-7 inline-flex rounded-full border px-3 py-1 text-xs font-medium tracking-wide ${accentClass}`}>
+    <Card className="group flex min-h-72 flex-col justify-between transition duration-200 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.055]">
+      <CardHeader>
+        <div className={`mb-7 inline-flex w-fit rounded-full border px-3 py-1 text-xs font-medium tracking-wide ${accentClass}`}>
           {eyebrow}
         </div>
         <h3 className="text-2xl font-semibold tracking-tight text-white">
@@ -30,14 +38,14 @@ function StudioCard({
         <p className="mt-3 max-w-md text-sm leading-6 text-zinc-400">
           {description}
         </p>
-      </div>
-      <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-4">
+      </CardHeader>
+      <CardFooter className="mt-8 justify-between">
         <span className="text-xs text-zinc-500">{detail}</span>
         <span aria-hidden="true" className="text-lg text-zinc-400 transition group-hover:translate-x-1 group-hover:text-white">
           →
         </span>
-      </div>
-    </article>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -57,12 +65,9 @@ function App() {
           <span className="hidden text-xs text-zinc-500 sm:inline">
             Creative production workspace
           </span>
-          <button
-            type="button"
-            className="rounded-lg border border-white/15 px-3.5 py-2 text-xs font-medium text-zinc-200 transition hover:border-white/30 hover:bg-white/5"
-          >
+          <Button variant="outline" size="sm">
             Sign in
-          </button>
+          </Button>
         </div>
       </header>
 
