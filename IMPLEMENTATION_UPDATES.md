@@ -335,3 +335,18 @@ A transactional two-user RLS test passed:
 5. Implement the persisted chat composer and message service, including idempotency and status handling.
 6. Define the server-side assistant orchestration/streaming contract before connecting assistant-ui to real model calls.
 7. Implement context compaction after persisted message history and summaries have a stable contract.
+
+
+### Phase 2 merge
+- PR #6 merged into `main`.
+- Merge commit: `0e62e556576a494f3481ce52cd71520ba766185e`.
+- Latest validation on the merged PR branch: GitHub Actions run #64 passed install, Supabase CLI setup, type-check and production build.
+
+## Next implementation batch — durable tasks and compaction storage
+
+The next backend batch will add versioned database records for:
+- Durable tasks and task event history/checkpoints.
+- Conversation summaries and exact source-message provenance.
+- Project-context summaries and source-conversation provenance.
+
+The browser will be able to read only its own task/summary records. Task execution state and summary creation/updates remain server-owned. The next migration must preserve strict least-privilege defaults and be verified with two-user RLS tests and Supabase Advisors before chat orchestration uses it.
