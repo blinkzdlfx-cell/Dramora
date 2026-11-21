@@ -479,7 +479,8 @@ The browser will be able to read only its own task/summary records. Task executi
 - Added a required `initialMode` prop and passed the selected mode from `App.tsx`. Password-recovery mode still takes precedence when a recovery event is active.
 - Changes were committed directly to `main` as two small commits; no pull request was created, as requested.
 
-### Validation still required
-- Run GitHub Actions type-check and production build against the direct-to-main commits.
-- Confirm Cloudflare completes the deployment containing these commits.
-- Retest both Create Account entry points. If registration still reports `Failed to fetch`, inspect the fresh Auth logs and browser Network/Console details at the same timestamp. Do not change Supabase project settings without new evidence.
+### Validation
+- GitHub Actions run **#83** for the direct-to-main change completed successfully: Supabase CLI setup, migration-generation check, dependency installation, dependency verification, TypeScript type-check and production build all passed.
+- The CI run was triggered by the documentation commit after both source changes were already on `main`, so the validated commit includes the AuthScreen and App changes.
+- Cloudflare production deployment completion and live browser behavior have not been independently verified in this session.
+- Retest both Create Account entry points after Cloudflare finishes deploying. If registration still reports `Failed to fetch`, inspect fresh Auth logs and browser Network/Console details at the same timestamp. Do not change Supabase project settings without new evidence.
