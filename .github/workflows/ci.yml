@@ -37,6 +37,10 @@ jobs:
             supabase migration new dramora_core_schema
             node scripts/write-core-migration.mjs
           fi
+          if ! compgen -G "supabase/migrations/*_harden_public_default_privileges.sql" > /dev/null; then
+            supabase migration new harden_public_default_privileges
+            node scripts/write-grants-hardening-migration.mjs
+          fi
       - name: Install pinned dependencies and generate lockfile
         run: npm install --no-audit --no-fund
       - name: Verify installed dependency tree

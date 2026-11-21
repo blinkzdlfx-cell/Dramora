@@ -10,6 +10,15 @@ begin
 end
 $$;
 
+-- New public objects must require explicit grants. Supabase's project defaults
+-- otherwise grant broad privileges to anon/authenticated, including TRUNCATE.
+alter default privileges for role postgres in schema public
+  revoke all on tables from public, anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke all on sequences from public, anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke execute on functions from public, anon, authenticated;
+
 -- Dramora's first application schema.
 -- Supabase Auth owns identities; application rows are scoped to auth.uid().
 -- New public tables are explicitly granted to authenticated only and protected by RLS.
@@ -98,6 +107,15 @@ create index conversations_owner_updated_idx
 create index messages_conversation_created_idx
   on public.messages (conversation_id, created_at, id);
 
+create index conversations_project_owner_idx
+  on public.conversations (project_id, owner_id);
+
+create index messages_conversation_owner_idx
+  on public.messages (conversation_id, owner_id);
+
+create index messages_owner_idx
+  on public.messages (owner_id);
+
 create unique index messages_conversation_idempotency_idx
   on public.messages (conversation_id, idempotency_key)
   where idempotency_key is not null;
@@ -108,7 +126,7 @@ alter table public.conversations enable row level security;
 alter table public.messages enable row level security;
 
 revoke all on table public.profiles, public.projects, public.conversations, public.messages
-  from public, anon;
+  from public, anon, authenticated;
 
 grant usage on schema public to authenticated;
 grant select, insert, update on table public.profiles to authenticated;
