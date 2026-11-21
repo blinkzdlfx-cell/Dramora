@@ -1,3 +1,15 @@
+-- The existing project has a Postgres event trigger that enables RLS on
+-- newly-created public tables. It remains owned by postgres and active, but
+-- its trigger function is not an application RPC and must not be executable
+-- by browser roles.
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    execute 'revoke execute on function public.rls_auto_enable() from public, anon, authenticated';
+  end if;
+end
+$$;
+
 -- Dramora's first application schema.
 -- Supabase Auth owns identities; application rows are scoped to auth.uid().
 -- New public tables are explicitly granted to authenticated only and protected by RLS.
