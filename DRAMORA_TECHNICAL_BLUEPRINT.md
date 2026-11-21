@@ -1700,3 +1700,539 @@ The next planning discussions are to be prepared in pairs:
 
 Prepare both together as a researched, consolidated proposal for user review. Do not begin implementation until the final consolidated blueprint has been reviewed and explicitly approved.
 
+
+
+---
+
+## 30. Visual Reference Cards and External Media Generation Management
+
+### 30.1 Product principle — confirmed
+
+Dramora is a creative planning, prompt-authoring and production-organisation system. It is not intended to become a large image/video hosting, processing or transcoding platform.
+
+The primary managed visual resource is the **visual reference record/card**: the structured information, prompt, generation settings and project relationships needed to create or reproduce a visual externally.
+
+Dramora does not natively generate images or videos. Users copy prompts and use external generation platforms. The generated media normally remains in the external platform and does not need to be uploaded to Dramora.
+
+The core Release 1 workflow must not depend on uploading, storing, processing, serving or transcoding generated images or videos. Optional external media URLs or lightweight attachments may be considered where useful, but they are not prerequisites for the reference-card system and must not turn Dramora into a media-hosting dependency.
+
+This direction supersedes the earlier proposal to make uploaded image/video libraries the centre of asset management. The word “asset” may still be used as a broad product concept, but the primary managed resources in this workflow are prompts, reference cards, structured entity information and their relationships.
+
+### 30.2 Reference cards and resource boundaries — confirmed
+
+Use cards only for resources that benefit from a compact visual-card presentation, including:
+- Image-generation prompts and visual references.
+- Video-generation prompts.
+- Character sheets.
+- Environment, costume, prop, animal/creature and other visual reference sheets where appropriate.
+- Other discrete visual-generation instructions that benefit from quick scanning, copying and opening.
+
+Do not represent every project resource as a card. Characters, locations, props, costumes and other entities remain structured entity/profile pages. Screenplays and other written materials remain documents. Scenes and shots remain structured production records. Timelines remain timeline views; continuity findings remain review/report records; relationships remain navigable through the Project Relationship Map.
+
+A card is a presentation and interaction surface for a reference record. It is not the canonical parent of the entity or scene it describes. Cards connect to stable entity, scene, shot and document IDs.
+
+### 30.3 Reference-card content — confirmed direction
+
+A reference record should support fields appropriate to its type, rather than forcing every card into one rigid schema.
+
+Common fields include:
+- Stable reference ID.
+- Clear, concise title that identifies what the card is for; use the character, animal, location, object or scene name where appropriate.
+- Reference type (for example image, video, character sheet, environment, costume, prop, scene or shot reference).
+- Associated entity/entities.
+- Associated project, scene and/or shot.
+- Intended output aspect ratio.
+- Prompt text and optional negative prompt where supported.
+- Generation settings and platform-specific parameters where known.
+- Short preview/summary of the prompt.
+- Status and approval information.
+- Created/updated timestamps and provenance.
+- Version history.
+- Related references and dependencies.
+- User notes and external platform information where useful.
+
+Support relevant aspect-ratio labels, including but not limited to 16:9, 9:16, 1:1, 4:3 and 21:9. The aspect ratio is metadata describing the intended generated output; it does **not** dictate the physical dimensions or layout ratio of the UI card. Cards remain compact and responsive to preserve workspace space. The ratio label must remain visible and must not disappear when the card is compact.
+
+### 30.4 Character sheets — confirmed requirements
+
+When Dramora creates a character sheet, it must prepare a comprehensive sheet by default. The standard output/reference layout is always **16:9 landscape**, regardless of whether the final production is vertical 9:16, horizontal 16:9 or another format.
+
+The character sheet should normally include, as appropriate:
+- Full-body front view.
+- Full-body side view.
+- Full-body back view.
+- Three-quarter view.
+- Facial close-up.
+- Multiple relevant facial expressions.
+- Distinctive physical characteristics.
+- Clothing and accessories relevant to the established design.
+- Additional camera angles or views needed to understand and reproduce the character accurately.
+
+Dramora determines the appropriate comprehensive set; users do not have to choose the required views every time. Users may suggest additional views, request adjustments or ask Dramora to modify the sheet. Such suggestions are considered and incorporated where appropriate, but they do not remove the expectation that Dramora prepares a complete standard sheet.
+
+A character sheet is a visual reference, not the character's canonical identity record. It is connected to the character entity and its Visual Identity Profile. Approved character-sheet changes must preserve history; a new version must not silently erase an approved earlier appearance.
+
+The 16:9 rule applies to character-sheet output/reference composition. It does not force individual scene images, shot references or generated video to use 16:9.
+
+### 30.5 Visual Identity Profiles — confirmed direction
+
+Visual Identity Profiles provide reusable, structured descriptions for characters, animals/creatures, locations, objects/props, costumes and other relevant entities.
+
+They may include stable characteristics, variable characteristics, visual descriptions, identifying details, style constraints and linked reference cards. For characters, for example, facial structure or distinctive marks may be designated as stable, while clothing, pose and expression may vary by scene.
+
+Visual Identity Profiles are **encouraged, not mandatory**. Dramora must not block a simple project or scene-specific prompt because a complete profile has not been approved. It should use available information, identify important gaps when relevant, and recommend creating a profile when doing so would materially improve consistency.
+
+A profile is distinct from a generation prompt:
+- The profile describes the established or proposed visual identity of an entity.
+- A prompt describes a particular intended generated result, composition or action.
+- Multiple prompts and reference cards may reuse one profile without duplicating or replacing the canonical entity.
+
+### 30.6 Prompt types and external generation compatibility — confirmed direction
+
+Support both image prompts and video prompts as first-class reference types. Do not label all prompt cards as image prompts.
+
+Prompt records may be associated with:
+- An entire scene.
+- An individual shot.
+- A scene segment/generation clip.
+- A multi-shot sequence, where the target external platform supports it.
+- An entity or visual reference independently of a particular scene.
+
+Image prompts describe a still visual result, composition and relevant visual identity. Video prompts additionally describe motion and time-dependent behaviour, including action, camera movement, duration, start/end state and optional timeline instructions.
+
+Keep platform-independent/general prompt content separate from platform-adapted instructions and settings. External platforms have different capabilities and constraints; Dramora must not assume universal support for character references, reference images, seeds, negative prompts, camera controls, multi-shot generation or particular durations. Platform-specific adapters may be added when supported and separately validated. Release 1 primarily prepares, organises, edits and copies prompts rather than requiring deep external-platform integrations.
+
+### 30.7 Compact card interface — confirmed
+
+**Desktop**
+- Cards remain compact and space-efficient.
+- Show a clear title, reference type (IMAGE or VIDEO, as applicable), associated entity/context where useful, and a permanently visible aspect-ratio label.
+- Show only a short prompt preview; do not expose the entire prompt by default or overcrowd the gallery.
+- Hover may reveal additional preview information and quick actions such as Copy Prompt. Hover must not be required to access essential functionality.
+- Clicking a card opens a full-detail view/page where the user can read the complete prompt, copy it, edit it, save changes, inspect versions and see relationships/dependencies.
+
+**Mobile**
+- Do not depend on hover.
+- Show compact cards with the title and aspect-ratio label visible.
+- Provide a three-dot action menu for quick actions.
+- Tapping a card opens a full-detail view/page with the complete prompt and the same core copy, edit, save, history and relationship functions available on desktop.
+
+Card titles must be understandable without opening the card. For an entity-specific reference, the entity name should be prominent (for example, “DAVID — CHARACTER SHEET” or “DAVID ENTERS THE HOSPITAL”).
+
+### 30.8 Reference-card status, editing and version history — confirmed direction
+
+Support meaningful lifecycle statuses such as Draft, Awaiting approval, Approved, Needs revision and Archived. Status transitions and approval requirements must follow the autonomy and consequential-change rules in section 27.
+
+Users can edit prompts directly in the full-detail view. Preserve meaningful prompt revisions, including original/AI-created and user-edited versions, authorship/source, timestamps and change descriptions where available. Users can inspect and restore an earlier prompt version by creating a new current version; never erase newer history.
+
+Changing a prompt does not automatically change an entity's established identity or project canon. Changes to approved visual identity or references must be reviewed according to their impact and the user's autonomy mode.
+
+### 30.9 Reference dependencies and change impact — confirmed direction
+
+Reference cards may depend on or reference multiple entities, scenes, shots, documents and other reference cards. A scene or shot may use multiple character, environment, costume, prop and style references. One entity/reference may be reused by many scenes and shots.
+
+Maintain explicit, stable-ID relationships and dependency records. If an established entity profile or approved reference changes, Dramora should identify potentially affected cards, scenes, shots and production packs. It should explain the impact and propose a review/update. It must not silently rewrite dependent approved prompts or creative work.
+
+### 30.10 Production Reference Packs — confirmed
+
+Users can create and export reference packs at all three scopes:
+1. Entire project.
+2. A particular scene or sequence.
+3. Selected entities, such as chosen characters, locations, animals, props or costumes.
+
+A pack should collect the relevant prompts, reference-card information, aspect ratios, generation settings, entity/scene/shot relationships, visual identity information and useful production notes. It should preserve a clear folder/file structure and identify dependencies or missing references.
+
+Support a readable document-style export and a structured ZIP package containing organised prompt files and metadata. The package does not require generated image/video files. If optional external media links are included, label them as external references and do not imply that Dramora hosts or controls those files.
+
+### 30.11 Infrastructure and data boundaries — confirmed direction
+
+The reference-card system should primarily use the existing Supabase PostgreSQL architecture for structured records, relationships, status, versions and metadata. Relevant searchable text may be indexed through the approved hybrid RAG architecture. Large media storage, image transformations, video transcoding and media-delivery infrastructure are not required for the core workflow.
+
+Do not make Supabase Storage, Cloudflare R2 or another media-storage provider a mandatory dependency for generated media. Cloudflare R2 remains rejected as a required choice under the user's prior constraints. Any future optional attachment or external-storage capability requires separate cost, free-tier, access-control and operational review.
+
+The strict Free-only rule remains in force. No paid generation, storage, processing, delivery or integration fallback may be activated automatically.
+
+### 30.12 Release 1 scope and validation
+
+Release 1 should include:
+- Structured image and video reference records/cards.
+- Compact responsive card gallery and full-detail views.
+- Permanent aspect-ratio labels independent of card dimensions.
+- Prompt copy, edit, save and version history.
+- Comprehensive 16:9 character-sheet prompt/reference preparation.
+- Encouraged, non-mandatory Visual Identity Profiles.
+- Entity, scene and shot relationships.
+- Draft/approval/revision states.
+- Dependency identification and impact review.
+- Project, scene and selected-entity Production Reference Pack exports.
+- No requirement to upload or host generated images/videos.
+
+Validate:
+- Card metadata and prompt versions persist and restore safely.
+- Desktop hover and mobile three-dot/full-detail interactions are accessible.
+- Aspect-ratio labels remain visible at compact sizes.
+- Character sheets consistently specify a 16:9 comprehensive reference layout, independent of final output ratio.
+- Prompts retrieve the correct approved entity identity and relevant references.
+- Entity/reference changes identify dependent resources without silently modifying them.
+- Production packs preserve prompt text, metadata, relationships and folder structure.
+- The core workflow functions when no media files are uploaded and when AI quota is unavailable.
+
+---
+
+## 31. Project Bible, Entity, Scene, Shot and Continuity Management
+
+### 31.1 Core principle — confirmed
+
+Scenes and shots are first-class structured project resources. They are not merely temporary AI outputs or unstructured sections of a screenplay.
+
+Dramora must connect creative development, screenplay/document content, structured scenes, shots, visual reference cards, entities, video prompts, continuity information and production exports.
+
+The underlying resources remain distinct and are connected through stable IDs and explicit relationships. The Project Relationship Map visualises those relationships; it does not replace the canonical records or normal navigation.
+
+### 31.2 Project Bible — confirmed direction
+
+Each project should have a structured Project Bible containing the project's established information and useful creative/production knowledge, including as relevant:
+- Project identity, premise, genre, themes and creative direction.
+- Characters and their profiles.
+- Locations and world/environment details.
+- Props, objects, costumes and other entities.
+- Relationships between entities.
+- Story rules and established facts.
+- Timeline and significant events.
+- Visual direction and linked visual references.
+- Relevant production information.
+
+The Bible should be useful for both simple and complex projects. It must remain lightweight and activate only the sections relevant to the user's project; a simple social video must not be forced through a full film-production setup.
+
+The Project Bible is structured and editable, not merely one long document or an unfiltered conversation transcript. Dramora may also generate a readable document view/export from the structured records.
+
+### 31.3 Entity management — confirmed direction
+
+Support structured project entities, including:
+- Characters.
+- Locations/environments.
+- Props and objects.
+- Costumes/wardrobe.
+- Organisations.
+- Vehicles.
+- Animals and creatures.
+- Other project-specific entity types where needed.
+
+Scenes, sequences and shots are structured production records and may be represented in the relationship map, but should not be forced into the same semantic category as a character or physical object.
+
+An entity should have, as appropriate:
+- Stable unique ID and project ID.
+- Entity type and name.
+- Aliases.
+- Description and structured attributes.
+- Visual Identity Profile, where useful.
+- Relationships to other entities.
+- Linked documents.
+- Linked scenes and shots.
+- Linked reference cards.
+- Canon/fact status and provenance.
+- Version/change history.
+
+Entity names may change; stable IDs preserve relationships. Alias and identity-resolution support should prevent similarly named entities from being incorrectly merged. Dramora may suggest a possible match but must not merge distinct entities without appropriate confirmation.
+
+### 31.4 Canon, facts, proposals and provenance — confirmed
+
+Distinguish at least these statuses:
+- **Confirmed:** accepted as project canon or an established project fact.
+- **Proposed:** suggested but not accepted.
+- **Unresolved:** requires a decision.
+- **Rejected:** explicitly rejected by the user.
+- **Deprecated:** formerly established but superseded or retired.
+
+Important facts and changes should preserve provenance, including source document/conversation or user action, author/source, timestamp, approval and prior value where available.
+
+Dramora's suggestions do not become canon merely because the model generated them. User approval and the autonomy rules in section 27 govern canon changes, consequential changes and replacement of approved work.
+
+### 31.5 Entity relationships and implementation direction — confirmed
+
+Represent relationships using Supabase PostgreSQL relational records rather than introducing a separate graph database as a required service.
+
+The schema should support typed, project-scoped relationships such as:
+- Character is related to another character.
+- Character owns or uses a prop.
+- Character wears a costume.
+- Character appears in a scene or shot.
+- Scene takes place at a location.
+- Prop appears in a scene or shot.
+- Reference card describes or visually represents an entity.
+- Document describes or establishes information about an entity.
+- Event involves entities and occurs at a point/period in story chronology.
+
+Use stable IDs, relationship types, relevant metadata and project-level authorization. The Project Relationship Map can query and visualise these records. Avoid a separate graph database unless a demonstrated need and separately approved architecture justify it.
+
+### 31.6 Story timeline and chronology — confirmed direction
+
+Support a structured story timeline and project events. Distinguish:
+- Story chronology (when an event happens in the fictional world).
+- Screenplay/reading order (where the scene appears in the written work).
+- Production/shooting order (when the scene is produced).
+- Flashbacks, flash-forwards and simultaneous events.
+
+A scene's position in the screenplay must not be treated as proof of its chronological position in the story. Events may link to scenes, characters, locations and other entities. Dramora can identify potential chronology conflicts and provide evidence, but intentional non-linear storytelling must remain supported.
+
+### 31.7 Scene records — confirmed
+
+A **scene** represents a continuous story event or dramatic unit in a particular setting/time. It is distinct from the screenplay document that contains or describes it.
+
+A scene record should support, as relevant:
+- Stable scene ID and project ID.
+- User-facing scene number and title.
+- Story sequence/order and optional chronology link.
+- Scene purpose and summary.
+- Interior/exterior, location, time of day and environment.
+- Characters and other participating entities.
+- Story actions, conflict, emotional progression and important revelations.
+- Dialogue/script content references.
+- Props, costumes and production requirements.
+- Estimated duration.
+- Related screenplay/document sections.
+- Related shots and scene segments/generation clips.
+- Related reference cards and prompts.
+- Continuity notes and findings.
+- Status, approvals, provenance and version history.
+
+Internal scene IDs must remain stable when display numbering or screenplay order changes. Display numbers can be recalculated without breaking relationships.
+
+Users must be able to create, edit, reorder, organise and manage scenes manually. Dramora must also be able to create scenes from conversation instructions, story outlines, screenplays and other relevant project material. It should ask for clarification only when missing information materially affects the result; otherwise it may make clearly identified proposals.
+
+### 31.8 Shot records and automatic shot breakdown — confirmed
+
+A **shot** is a specific camera view/composition or visual moment within a scene. It is not synonymous with a scene or a video-generation clip.
+
+Dramora should automatically propose a suitable shot breakdown from a scene, subject to user review and editing. Users can also create and manage shots manually.
+
+A shot may contain, where relevant:
+- Stable shot ID and display number/order.
+- Parent scene ID.
+- Shot title and purpose.
+- Framing/shot size.
+- Camera angle.
+- Camera movement.
+- Composition and character positioning.
+- Characters and other entities present.
+- Character action and expression.
+- Location/environment.
+- Lighting and visual direction.
+- Dialogue/narration or sound instructions.
+- Estimated duration.
+- Continuity requirements.
+- Required visual references.
+- Related image and video prompts/cards.
+- Version and approval information.
+
+Shot lists must support adding, editing, duplicating, reordering, removing, and requesting additional or revised shots. Shot breakdowns should be appropriate to the scene and the user's intent; Dramora must not impose an unnecessarily elaborate cinematic shot structure on a simple video.
+
+### 31.9 Scene segments and generation clips — confirmed requirement
+
+A scene may be longer than the maximum duration supported by a chosen external video-generation platform. Dramora must therefore distinguish the story scene from the smaller **scene segments/generation clips** used to produce it.
+
+A scene can remain one continuous story scene while being divided into multiple generation segments. For example, a 50-second scene intended for a platform with a 10-second per-generation limit may be planned as five sequential 10-second generation clips. These clips remain parts of the same scene; they must not be misrepresented as five separate story scenes.
+
+The system should support:
+- Total intended scene duration.
+- Selected/target external generation platform where known.
+- Configurable or platform-informed maximum clip duration.
+- Proposed segment count and duration per segment.
+- User adjustment of segment boundaries and durations.
+- Handling of a final remainder when the total duration does not divide evenly.
+- Segment order and stable IDs.
+- Segment-specific actions, dialogue, camera direction and prompts.
+- Links from each segment to one or more shots.
+- Continuity handoff information between consecutive segments, including character position, action state, environment, costume, props, lighting and camera state where relevant.
+- Segment-specific image/video reference cards and generation settings.
+- Total-duration and segment-duration validation.
+
+Dramora should recommend a practical segmentation based on the target generator's verified capabilities, not assume every platform supports 10-second clips. If the platform is unknown, it can use a user-selected target duration and clearly label it as an assumption.
+
+**Do not conflate scenes, shots and generation segments.**
+- A scene is a story unit.
+- A shot is a camera composition or view.
+- A generation segment is a bounded clip-generation unit required by the target platform's duration or workflow constraints.
+
+A segment may contain one shot or, where appropriate and supported, multiple shots. A shot may be represented across generation segments if the action requires it. The relationships must support these cases without forcing a one-to-one mapping.
+
+Dramora should propose segment boundaries that preserve coherent action and continuity. It should avoid arbitrary cuts that create broken movement, inconsistent character positions or impossible transitions. Users can review and adjust the proposed segmentation.
+
+### 31.10 Scene/shot prompt relationships — confirmed direction
+
+Support prompts at multiple levels:
+- Scene-level image or video prompts describing an overall visual direction or sequence.
+- Shot-level image or video prompts describing a specific composition or action.
+- Segment-level video prompts describing the bounded clip to be generated.
+- Optional multi-shot video prompts combining multiple shots when the external platform supports that workflow.
+
+A video prompt may belong to an entire scene, an individual shot, a scene segment or a supported multi-shot sequence. It is not restricted to only one level.
+
+Do not automatically combine all shots into one video prompt. Keep individual shot/segment control available so users can regenerate or revise a specific part without unnecessarily changing the rest of the scene.
+
+Prompt records are reference cards under section 30 and connect to the relevant scene, shot, segment and entities. Scene/shot/segment records remain independent of their prompts.
+
+### 31.11 Scene and shot workspace — confirmed direction
+
+Each scene should have a dedicated responsive workspace with:
+1. **Scene overview:** title/number, purpose, duration, setting, characters, story information and continuity status.
+2. **Shot breakdown:** ordered shots with controls to create, edit, duplicate, reorder and request AI changes.
+3. **Segments/generation clips:** total duration, target clip duration, ordered segments, duration controls, continuity handoffs and associated shots/prompts.
+4. **Visual references:** relevant character sheets, entity references, image prompts and video prompts.
+5. **Documents/script context:** linked screenplay section and other relevant documents.
+6. **Dramora assistant:** context-aware of the active scene, selected shot or segment, and relevant project information.
+
+Users should be able to ask Dramora to revise a selected shot or segment without unnecessarily rewriting the whole scene. Examples include changing camera framing, adjusting an action, revising a prompt or adding a shot while preserving approved character identity and unrelated work.
+
+### 31.12 Screenplay/document integration and change impact — confirmed
+
+Screenplay documents and structured scene/shot records are connected but distinct:
+- The screenplay remains the authoritative written document for its script content.
+- Structured scene records represent the production/story breakdown.
+- Shot records represent camera compositions.
+- Generation segments represent bounded external video-generation units.
+- Reference cards hold prompts and visual-generation instructions.
+
+Dramora should be able to create or update structured scene records from screenplay content and connect them to the corresponding screenplay sections. Changes to screenplay content should trigger an impact review of affected scenes, shots, segments and prompts.
+
+The user explicitly approved this behaviour subject to a strict protection rule:
+- Never silently overwrite approved scene, shot, segment, prompt or other creative work.
+- Identify what changed in the source screenplay and which dependent resources may be affected.
+- Explain proposed changes and obtain approval where required by section 27.
+- When an approved change is applied, automatically run appropriate consistency/integrity checks on the affected records and relationships.
+- Report clearly what was changed, what was checked, the outcome, and anything that could not be updated or verified.
+- Preserve previous versions and provenance.
+- Do not claim successful verification if a check was not actually performed or failed.
+
+The same dependency-review approach applies when established character, location, costume, prop or visual identity information changes.
+
+### 31.13 Continuity checking — confirmed direction
+
+Dramora should provide on-demand and relevant workflow-stage continuity checks rather than continuously invoking AI on every edit.
+
+Checks may cover:
+- Character appearance and identity.
+- Character age and other established attributes.
+- Character knowledge and information access.
+- Character relationships and motivations where canonically established.
+- Location and environment details.
+- Props and object ownership/position/state.
+- Costume and wardrobe continuity.
+- Injuries and physical condition.
+- Story chronology and event order.
+- Scene transitions and generation-segment handoffs.
+- Visual references and approved identity constraints.
+
+Each finding should provide:
+1. Severity/category, such as Conflict, Potential issue or Suggestion.
+2. What was detected.
+3. The relevant established fact or prior state.
+4. The scene, shot, segment or document where the issue appears.
+5. Supporting evidence and source references.
+6. A proposed resolution where useful.
+
+Continuity findings are advisory until accepted. Dramora must account for intentional exceptions such as disguise, flashbacks, lies, character transformation, deliberate costume changes or unreliable narration. It must not silently rewrite content to resolve a finding.
+
+AI continuity checking cannot guarantee detection of every inconsistency. The UI and documentation must not promise perfect continuity.
+
+### 31.14 Project Relationship Map — confirmed
+
+Provide a visual **Project Relationship Map** that shows how project resources connect. It is an additional navigation and exploration surface, not a replacement for normal project navigation, entity pages, documents, scene workspaces or reference-card galleries.
+
+The map should be able to visualise relevant relationships among:
+- Project and project sections.
+- Conversations.
+- Documents and screenplay sections.
+- Characters and other entities.
+- Locations, props and costumes.
+- Timeline events.
+- Scenes.
+- Shots.
+- Scene segments/generation clips.
+- Image/video reference cards.
+- Continuity findings.
+- Production Reference Packs.
+
+Expected interactions:
+- Zoom and pan.
+- Move/reposition nodes where appropriate.
+- Click a node to open its resource.
+- Search for an entity, scene, shot or document.
+- Filter by resource type.
+- Expand/collapse groups.
+- Highlight direct and related connections.
+- Provide focused views such as character relationships, scene/shot structure, visual-reference dependencies and the overall project map.
+
+The map should be generated from canonical relational data and stable IDs, not maintained as a separate manually duplicated source of truth. It must respect project permissions and avoid exposing cross-project information.
+
+### 31.15 Production Reference Packs and production preparation — confirmed
+
+Scene/shot/segment relationships feed into Production Reference Packs as defined in section 30. Packs can be produced for a whole project, a scene or selected entities.
+
+For a scene pack, include relevant scene information, ordered shots, generation segments, character/location/prop references, image prompts, video prompts, aspect ratios, generation durations/settings, continuity notes and dependencies.
+
+The Film Studio may additionally prepare production-oriented outputs such as scene breakdowns, character/location lists, props, costumes, production notes and shooting schedules. These should remain structured and linked to the canonical project resources.
+
+### 31.16 Studio-specific workflows — confirmed direction
+
+Both studios share the same underlying entity, scene, shot, segment, prompt, reference-card and relationship architecture, but should not be forced into identical workflows.
+
+**AI Video Studio**
+- Focus on video concepts, scenes, shots, duration planning, generator-aware scene segmentation, image/video prompts and visual reference preparation.
+- Support simple social/marketing/educational videos with lightweight structures as well as complex cinematic productions.
+- Do not force a full film-production workflow when the user's intent does not require it.
+
+**Film Studio**
+- Support professional screenplay development and structured scene extraction.
+- Provide deeper scene and shot breakdowns, character/location/prop/costume continuity and production preparation.
+- Connect screenplay changes to structured scene/shot/segment impact reviews.
+- Support shooting/production order separately from story chronology.
+
+### 31.17 Release 1 scope — confirmed direction
+
+Release 1 should include a coherent foundational system:
+1. Structured Project Bible and project facts.
+2. Entity profiles and typed relationships.
+3. Canon/proposal/unresolved/rejected/deprecated statuses and provenance.
+4. Character, location, prop, costume, animal/creature and other relevant entities.
+5. Structured story events and chronology.
+6. Manual scene creation and management.
+7. AI scene creation from conversation and screenplay material.
+8. Automatic proposed shot breakdowns with user review/editing.
+9. Manual shot creation and management.
+10. Scene duration and generator-aware segmentation into multiple generation clips.
+11. Segment-to-shot relationships and continuity handoff details.
+12. Scene-, shot- and segment-level image/video prompt relationships.
+13. Screenplay-to-scene links and change-impact review.
+14. Evidence-backed on-demand/workflow-stage continuity checks.
+15. Project Relationship Map based on canonical records.
+16. Integration with reference cards and Production Reference Packs.
+17. Version history, approval, provenance and safe restoration across meaningful structured resources.
+
+Advanced visual analysis of generated media and other capabilities that require hosting or processing uploaded media are not prerequisites for this architecture and require separate research/approval if considered later.
+
+### 31.18 Technical validation before implementation
+
+Before production acceptance, validate:
+- Stable IDs preserve links when scene/shot display numbers or ordering change.
+- Manual and AI scene creation produce valid structured records.
+- Automatic shot breakdowns are editable and do not overwrite approved content.
+- Scene duration can be divided into configurable generation segments, including non-even remainders.
+- A 50-second scene can be represented as five 10-second generation segments without becoming five story scenes.
+- Segment-to-shot relationships support one-to-many and many-to-one cases where required.
+- Segment continuity handoff data is preserved and surfaced in prompts.
+- Platform duration constraints are configurable/validated and are not assumed universally.
+- Scene-, shot-, segment- and multi-shot prompts connect to the correct references and entities.
+- Screenplay changes identify affected records and produce a review before protected changes.
+- Approved changes trigger real integrity/consistency checks and a truthful completion report.
+- Version history and restore-as-new-version preserve previous work.
+- Continuity findings cite relevant project evidence and do not automatically rewrite canon.
+- Project Relationship Map is generated from canonical relationships, supports filtering/navigation and enforces project isolation.
+- RAG and relational retrieval remain scoped by user/project permissions.
+- Production Reference Packs preserve ordering, relationships, metadata and prompt content.
+
+### 31.19 Planning status
+
+This section records the user's approval of the Project Bible, entity, scene, shot, scene-segmentation, continuity and Project Relationship Map architecture described here. The detailed relational schema, graph rendering library, generation-platform capability registry, segment-boundary algorithms and exact UI layout remain implementation research and design tasks. They must be validated against the approved architecture and Free-only constraints before implementation.
+
+The overall product remains subject to the user's requirement that the final consolidated technical blueprint be reviewed and explicitly approved before coding begins.
