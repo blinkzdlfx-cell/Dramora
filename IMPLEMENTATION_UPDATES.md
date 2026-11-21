@@ -454,3 +454,32 @@ The browser will be able to read only its own task/summary records. Task executi
 3. Retry registration. If it still fails, capture the failed request URL/status and the browser console's full network/CORS message (do not share passwords or auth tokens).
 4. Verify email confirmation, sign-in, refresh persistence and password recovery before moving on to persisted chat messages.
 
+## 2026-11-21 — Supabase infrastructure verification and auth entry-mode correction
+
+### Supabase connection and project verification
+- Queried both connected Supabase accounts to identify the intended Dramora backend rather than assuming the account/project from its display name.
+- Confirmed the correct project is **dramora**, ref `hiyevsafaiehlzuqcngf`, under the **BlinkdlFx supabase** connection, in `eu-west-1`.
+- Supabase reports the project as `ACTIVE_HEALTHY`; the Management API returned the matching API URL `https://hiyevsafaiehlzuqcngf.supabase.co`.
+- Connected directly to the project's Postgres database as the administrative connection and confirmed database access. The database contains the expected 11 public application tables; all 11 have RLS enabled.
+- Confirmed the four expected migrations are recorded in this project: core schema, public default-privilege hardening, durable tasks/context summaries, and summary-source FK indexes.
+- Confirmed there are currently zero Auth users and zero rows in the application tables. No user data was modified.
+- Security Advisor returned no findings. Performance Advisor returned only informational unused-index notices, expected while the new tables are empty.
+- The other connected Supabase account contains no Dramora project. The similarly named Forge project is in a different account and is not the backend used for this application.
+- `supabase/config.toml` uses `project_id = "dramora"` as the local Supabase CLI project slug. This is not a competing remote project reference. The browser client reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; it does not hardcode a different Supabase project reference.
+
+### Authentication request log inspection
+- Inspected the target project's Auth logs for the recent 24-hour window.
+- Logs include requests originating from `https://dramora.brilinadev.name.ng`, including successful Auth API requests, confirming that the production origin has contacted this project's Auth service.
+- No `/signup` or `/token` request was present in the inspected Auth log window. This does not prove the browser-side failure's exact cause, but it means the current logs do not show a registration request reaching the Auth signup endpoint. A fresh registration attempt after this UI fix is needed to correlate a request with the logs.
+- No Auth settings, database schema, keys, or user records were changed during this inspection.
+
+### Auth entry-mode bug fixed directly on main
+- `App.tsx` previously selected `sign-up` when Create Account was clicked but did not pass that selection into `AuthScreen`.
+- `AuthScreen.tsx` independently initialized every new screen in `sign-in` mode, causing Create Account to display the Sign In form.
+- Added a required `initialMode` prop and passed the selected mode from `App.tsx`. Password-recovery mode still takes precedence when a recovery event is active.
+- Changes were committed directly to `main` as two small commits; no pull request was created, as requested.
+
+### Validation still required
+- Run GitHub Actions type-check and production build against the direct-to-main commits.
+- Confirm Cloudflare completes the deployment containing these commits.
+- Retest both Create Account entry points. If registration still reports `Failed to fetch`, inspect the fresh Auth logs and browser Network/Console details at the same timestamp. Do not change Supabase project settings without new evidence.
